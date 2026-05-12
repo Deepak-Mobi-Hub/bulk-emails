@@ -3,1179 +3,1659 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Outreach Pro - B2B CRM</title>
+    <title>Mobi-Hub B2B Email</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
     <style>
-        /* Custom Scrollbar & Utils */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        .rte-toolbar button { padding: 0.25rem 0.5rem; border-radius: 0.25rem; }
-        .rte-toolbar button:hover { background-color: #e2e8f0; }
-        #editor-content:empty:before { content: attr(placeholder); color: #94a3b8; pointer-events: none; display: block; }
-        
-        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
-        .toast-exit { animation: slideOut 0.3s ease-in forwards; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        /* Custom scrollbar for better UI */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        .dark ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .hidden-view { display: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        [v-cloak] { display: none !important; }
+        /* Editor specific styles */
+        #email-body ol { list-style-type: decimal; margin-left: 20px; }
+        #email-body ul { list-style-type: disc; margin-left: 20px; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans h-screen flex overflow-hidden">
+<body class="bg-gray-100 dark:bg-gray-900 font-sans text-gray-800 dark:text-gray-100 h-screen flex overflow-hidden transition-colors duration-200">
 
-    <!-- Sidebar Navigation -->
-    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-20 shadow-sm">
-        <div class="h-16 flex items-center px-6 border-b border-gray-100">
-            <i class="ph-fill ph-paper-plane-tilt text-blue-600 text-2xl mr-2"></i>
-            <span class="font-bold text-xl tracking-tight text-gray-900">Outreach<span class="text-blue-600">Pro</span></span>
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col z-10 shadow-sm transition-colors duration-200">
+        <div class="p-6 flex items-center space-x-2 text-blue-700 dark:text-blue-400">
+            <i class="ph-fill ph-paper-plane-tilt text-3xl"></i>
+            <h1 class="text-xl font-bold tracking-tight text-gray-800 dark:text-white">Mobi-Hub <span class="text-xs text-gray-400 font-normal block">B2B Email</span></h1>
         </div>
-        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1" id="nav-menu">
-            <button data-route="dashboard" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-900 bg-gray-100">
-                <i class="ph ph-squares-four text-lg mr-3 text-gray-500"></i> Dashboard
+        
+        <nav class="flex-1 py-4 space-y-1">
+            <button onclick="switchView('dashboard')" id="nav-dashboard" class="w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-r-4 border-transparent">
+                <i class="ph ph-squares-four text-lg"></i>
+                <span>Dashboard</span>
             </button>
-            <button data-route="campaigns" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-                <i class="ph ph-folder-open text-lg mr-3 text-gray-500"></i> Campaigns & Leads
+            <button onclick="switchView('compose')" id="nav-compose" class="w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-r-4 border-transparent">
+                <i class="ph ph-note-pencil text-lg"></i>
+                <span>Compose</span>
             </button>
-            <button data-route="templates" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-                <i class="ph ph-file-text text-lg mr-3 text-gray-500"></i> Templates
+            <button onclick="switchView('queue')" id="nav-queue" class="w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-r-4 border-transparent">
+                <i class="ph ph-list-dashes text-lg"></i>
+                <span>Queue</span>
             </button>
-            <button data-route="queue" class="nav-item w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-                <div class="flex items-center"><i class="ph ph-hourglass-high text-lg mr-3 text-gray-500"></i> Outbox Queue</div>
-                <span id="nav-queue-count" class="bg-blue-100 text-blue-600 py-0.5 px-2 rounded-full text-xs">0</span>
+            <button onclick="switchView('sent')" id="nav-sent" class="w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-r-4 border-transparent">
+                <i class="ph ph-check-circle text-lg"></i>
+                <span>Sent Logs</span>
             </button>
-            <button data-route="logs" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-                <i class="ph ph-envelope-simple-open text-lg mr-3 text-gray-500"></i> Sent Logs
+            <button onclick="switchView('followups')" id="nav-followups" class="w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-r-4 border-transparent">
+                <i class="ph ph-arrows-clockwise text-lg"></i>
+                <span>Follow Ups</span>
             </button>
-            <button data-route="quicksend" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-                <i class="ph ph-lightning text-lg mr-3 text-gray-500"></i> Quick Send
+            <button onclick="switchView('settings')" id="nav-settings" class="w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-r-4 border-transparent">
+                <i class="ph ph-gear text-lg"></i>
+                <span>Configuration</span>
             </button>
-            <div class="pt-4 mt-4 border-t border-gray-100">
-                <button data-route="settings" class="nav-item w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-                    <i class="ph ph-gear text-lg mr-3 text-gray-500"></i> Settings
+            
+            <div class="pt-4 mt-4 border-t border-gray-100 dark:border-gray-700">
+                <button onclick="toggleDarkMode()" class="w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <i class="ph ph-moon text-lg dark:hidden"></i>
+                    <i class="ph ph-sun text-lg hidden dark:block text-yellow-400"></i>
+                    <span class="dark:hidden">Dark Mode</span>
+                    <span class="hidden dark:block">Light Mode</span>
                 </button>
             </div>
         </nav>
-        <div class="p-4 border-t border-gray-200">
-            <button id="btn-auth" class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                <i class="ph ph-google-logo text-lg mr-2 text-red-500"></i> <span id="auth-text">Connect Gmail</span>
-            </button>
+
+        <div class="p-6 border-t border-gray-100 dark:border-gray-700">
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Daily Quota</h3>
+                <div class="flex items-end justify-between mb-1">
+                    <span id="daily-count" class="text-2xl font-bold text-gray-800 dark:text-white">0</span>
+                    <span class="text-sm text-gray-500 dark:text-gray-400 mb-1">/ 100</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+                    <div id="daily-bar" class="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Resets daily</p>
+            </div>
         </div>
     </aside>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         
-        <!-- Header Controls -->
-        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10 shrink-0">
-            <h1 id="view-title" class="text-xl font-semibold text-gray-800">Dashboard</h1>
+        <!-- HEADER -->
+        <header class="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-8 flex-shrink-0 transition-colors duration-200">
             <div class="flex items-center space-x-4">
-                <div id="engine-status" class="flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
-                    <span class="w-2 h-2 rounded-full bg-gray-400 mr-2" id="engine-indicator"></span> Engine Idle
+                <div id="status-indicator" class="hidden flex items-center space-x-2 px-3 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-full text-sm font-medium shadow-sm">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                    <span>Active</span>
                 </div>
-                <button id="btn-engine-toggle" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 shadow-sm flex items-center transition-colors">
-                    <i class="ph-fill ph-play mr-2"></i> Start Sending
-                </button>
+                <div id="paused-indicator" class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-sm font-medium border border-gray-200 dark:border-gray-600">
+                    Paused
+                </div>
+                <span id="status-text" class="text-sm text-gray-500 dark:text-gray-400 border-l border-gray-200 dark:border-gray-700 pl-4">Ready</span>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <div id="auth-section">
+                    <button onclick="initGoogleAuth()" class="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
+                        <i class="ph ph-google-logo"></i>
+                        <span>Connect Gmail</span>
+                    </button>
+                </div>
+                <div id="user-section" class="hidden flex items-center space-x-2 bg-gray-50 dark:bg-gray-700 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-600">
+                    <div class="h-6 w-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold text-xs">
+                        <i class="ph ph-user"></i>
+                    </div>
+                    <span id="user-email" class="text-xs font-medium text-gray-700 dark:text-gray-300"></span>
+                </div>
             </div>
         </header>
 
-        <!-- Views Container -->
-        <div class="flex-1 overflow-y-auto p-6" id="views-container">
+        <!-- VIEWS -->
+        <main class="flex-1 overflow-auto p-8 relative">
             
-            <!-- VIEW: Dashboard -->
-            <div id="view-dashboard" class="view-section space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <div class="flex items-center justify-between"><h3 class="text-gray-500 text-sm font-medium">Sent Today</h3><i class="ph ph-paper-plane-right text-gray-400"></i></div>
-                        <p class="text-3xl font-bold text-gray-900 mt-2" id="dash-sent-today">0 <span class="text-sm font-normal text-gray-500">/ 100 limit</span></p>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <div class="flex items-center justify-between"><h3 class="text-gray-500 text-sm font-medium">In Queue</h3><i class="ph ph-hourglass text-gray-400"></i></div>
-                        <p class="text-3xl font-bold text-blue-600 mt-2" id="dash-queue-count">0</p>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <div class="flex items-center justify-between"><h3 class="text-gray-500 text-sm font-medium">Total Sent Log</h3><i class="ph ph-books text-gray-400"></i></div>
-                        <p class="text-3xl font-bold text-gray-900 mt-2" id="dash-total-sent">0</p>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <div class="flex items-center justify-between"><h3 class="text-gray-500 text-sm font-medium">Replies Found</h3><i class="ph ph-arrow-u-down-left text-gray-400"></i></div>
-                        <p class="text-3xl font-bold text-green-600 mt-2" id="dash-replies">0</p>
-                    </div>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-semibold text-gray-800">Quick Actions</h2>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <button onclick="app.router('campaigns')" class="p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 flex flex-col items-center justify-center text-center transition-colors">
-                            <i class="ph ph-users text-3xl text-blue-500 mb-2"></i><span class="font-medium text-gray-700">Create Campaign</span>
-                        </button>
-                        <button onclick="app.actions.scanReplies()" class="p-4 border border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 flex flex-col items-center justify-center text-center transition-colors">
-                            <i class="ph ph-scan text-3xl text-green-500 mb-2"></i><span class="font-medium text-gray-700">Scan Inbox for Replies</span>
-                        </button>
-                        <button onclick="app.actions.generateReport()" class="p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 flex flex-col items-center justify-center text-center transition-colors">
-                            <i class="ph ph-chart-bar text-3xl text-purple-500 mb-2"></i><span class="font-medium text-gray-700">Download Monthly Report</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- VIEW: Templates -->
-            <div id="view-templates" class="view-section hidden space-y-6">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="border-b border-gray-200 bg-gray-50 px-6 py-3 flex justify-between items-center">
-                        <div class="flex space-x-4" id="template-tabs">
-                            <button class="tab-btn active text-blue-600 font-medium border-b-2 border-blue-600 pb-1" data-cat="b2b">B2B Templates</button>
-                            <button class="tab-btn text-gray-500 font-medium hover:text-gray-700 pb-1" data-cat="event">Event Templates</button>
-                        </div>
-                        <button onclick="app.ui.openTemplateModal()" class="text-sm bg-white border border-gray-300 px-3 py-1.5 rounded shadow-sm hover:bg-gray-50"><i class="ph ph-plus mr-1"></i> New Template</button>
-                    </div>
-                    <div class="p-6">
-                        <div id="templates-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Templates injected here -->
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-blue-50 text-blue-800 text-sm p-4 rounded-lg flex items-start">
-                    <i class="ph ph-info text-lg mr-2 mt-0.5"></i>
-                    <div><strong>Tip:</strong> Use Spintax <code>{Hi|Hello|Hey}</code> and Variables <code>{Name}</code>, <code>{Company}</code> to personalize your outreach.</div>
-                </div>
-            </div>
-
-            <!-- VIEW: Campaigns & Leads -->
-            <div id="view-campaigns" class="view-section hidden space-y-6">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-lg font-semibold">Active Campaigns</h2>
-                    <button onclick="app.ui.openCampaignModal()" class="bg-gray-900 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-800"><i class="ph ph-plus mr-1"></i> New Campaign</button>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Campaign Name</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th></tr>
-                        </thead>
-                        <tbody id="campaigns-tbody" class="bg-white divide-y divide-gray-200">
-                            <!-- Campaigns injected -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- VIEW: Queue -->
-            <div id="view-queue" class="view-section hidden space-y-4">
-                <div class="flex justify-between items-center mb-2">
-                    <p class="text-sm text-gray-600">Pending emails waiting to be sent automatically.</p>
-                    <button onclick="app.actions.clearQueue()" class="text-red-600 text-sm hover:underline"><i class="ph ph-trash mr-1"></i>Clear Queue</button>
-                </div>
-                <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Campaign</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Template</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="queue-tbody" class="bg-white divide-y divide-gray-200">
-                            <!-- Queue injected -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- VIEW: Sent Logs & Followups -->
-            <div id="view-logs" class="view-section hidden space-y-4">
-                <div class="flex justify-between items-center mb-2">
-                    <p class="text-sm text-gray-600">History of sent emails and replies.</p>
-                    <button onclick="app.actions.queueFollowUps()" class="bg-purple-100 text-purple-700 px-3 py-1.5 rounded text-sm hover:bg-purple-200"><i class="ph ph-arrows-clockwise mr-1"></i> Queue Follow-ups for Non-Repliers</button>
-                </div>
-                <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">To</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="logs-tbody" class="bg-white divide-y divide-gray-200 text-sm">
-                            <!-- Logs injected -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- VIEW: Quick Send -->
-            <div id="view-quicksend" class="view-section hidden max-w-2xl mx-auto mt-8">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
-                    <h2 class="text-lg font-semibold border-b pb-2 mb-4">Manual Quick Send</h2>
-                    <p class="text-sm text-gray-500 mb-4">Bypass the queue and send immediately.</p>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">To Email</label>
-                        <input type="email" id="qs-email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2" placeholder="lead@company.com">
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
+            <!-- EDIT MODAL -->
+            <div id="edit-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 fade-in backdrop-blur-sm">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md border border-gray-200 dark:border-gray-700 relative">
+                    <button onclick="closeEditModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                        <i class="ph ph-x text-lg"></i>
+                    </button>
+                    <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-white flex items-center gap-2">
+                        <i class="ph ph-pencil-simple text-blue-600"></i> Edit Contact
+                    </h3>
+                    <input type="hidden" id="edit-id">
+                    <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Name (Optional)</label>
-                            <input type="text" id="qs-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2">
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">Email Address</label>
+                            <input id="edit-email" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white transition-shadow">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Company (Optional)</label>
-                            <input type="text" id="qs-company" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2">
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">First Name</label>
+                            <input id="edit-name" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white transition-shadow">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">Company</label>
+                            <input id="edit-company" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white transition-shadow">
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Select Template</label>
-                        <select id="qs-template" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2">
-                            <!-- Options injected -->
-                        </select>
-                    </div>
-                    <div class="pt-4">
-                        <button onclick="app.actions.quickSend()" class="w-full bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 flex justify-center items-center">
-                            <i class="ph ph-paper-plane-right mr-2"></i> Send Now
-                        </button>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button onclick="closeEditModal()" class="px-4 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                        <button onclick="saveEditItem()" class="px-4 py-2 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors">Save Changes</button>
                     </div>
                 </div>
             </div>
 
-            <!-- VIEW: Settings -->
-            <div id="view-settings" class="view-section hidden max-w-2xl mx-auto mt-8">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-                    <div>
-                        <h3 class="text-lg font-medium leading-6 text-gray-900">API Configuration</h3>
-                        <p class="mt-1 text-sm text-gray-500">Requires Google Cloud Console Client ID with Gmail API enabled.</p>
-                        <div class="mt-3">
-                            <label class="block text-sm font-medium text-gray-700">Google Client ID</label>
-                            <input type="text" id="set-clientid" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2" placeholder="xxxx-xxxx.apps.googleusercontent.com">
+            <!-- DASHBOARD VIEW -->
+            <div id="view-dashboard" class="hidden-view fade-in">
+                <div class="max-w-5xl mx-auto space-y-6">
+                    <!-- Welcome / Status -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Welcome to Mobi-Hub</h2>
+                            <p class="text-gray-500 dark:text-gray-400 mt-1">Manage your B2B email campaigns efficiently.</p>
                         </div>
-                    </div>
-                    <div class="border-t border-gray-200 pt-6">
-                        <h3 class="text-lg font-medium leading-6 text-gray-900">Sending Engine Parameters</h3>
-                        <p class="mt-1 text-sm text-gray-500">To prevent spam filters, emails are sent with a random delay between these values.</p>
-                        <div class="mt-3 grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Min Delay (Seconds)</label>
-                                <input type="number" id="set-min" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Max Delay (Seconds)</label>
-                                <input type="number" id="set-max" min="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2">
+                        <div class="text-right">
+                            <p class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide font-semibold mb-1">System Status</p>
+                            <div id="dash-status" class="text-lg font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 md:justify-end">
+                                <span class="w-3 h-3 rounded-full bg-gray-400"></span> Paused
                             </div>
                         </div>
                     </div>
-                    <div class="border-t border-gray-200 pt-6 flex justify-between items-center">
-                        <div>
-                            <h3 class="text-lg font-medium leading-6 text-gray-900">Data Management</h3>
-                            <p class="mt-1 text-sm text-gray-500">Backup your local storage.</p>
+
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Sent Today</h3>
+                                <div class="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg"><i class="ph-bold ph-paper-plane-tilt"></i></div>
+                            </div>
+                            <div class="flex items-baseline gap-2">
+                                <span id="dash-sent" class="text-3xl font-bold text-gray-800 dark:text-white">0</span>
+                                <span class="text-sm text-gray-400 dark:text-gray-500">/ 100</span>
+                            </div>
                         </div>
-                        <div class="space-x-2">
-                            <button onclick="app.actions.exportData()" class="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50">Export JSON</button>
-                            <label class="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50 cursor-pointer">
-                                Import <input type="file" class="hidden" accept=".json" onchange="app.actions.importData(event)">
-                            </label>
+
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">In Queue</h3>
+                                <div class="p-2 bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg"><i class="ph-bold ph-list-dashes"></i></div>
+                            </div>
+                            <span id="dash-queue" class="text-3xl font-bold text-gray-800 dark:text-white">0</span>
                         </div>
-                    </div>
-                    <div class="pt-4 border-t border-gray-200 flex justify-end">
-                        <button onclick="app.actions.saveSettings()" class="bg-gray-900 text-white px-4 py-2 rounded shadow hover:bg-gray-800">Save Settings</button>
-                    </div>
-                </div>
-            </div>
 
-        </div>
-    </main>
-
-    <!-- GLOBAL MODALS (DRY Principle) -->
-    
-    <!-- Template Editor Modal -->
-    <div id="modal-template" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh]">
-            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-medium" id="modal-tpl-title">Edit Template</h3>
-                <button onclick="app.ui.closeModal('modal-template')" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-xl"></i></button>
-            </div>
-            <div class="p-6 overflow-y-auto flex-1 space-y-4">
-                <input type="hidden" id="tpl-id">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Template Name</label>
-                        <input type="text" id="tpl-name" class="mt-1 block w-full border rounded p-2 text-sm" placeholder="e.g. Initial Outreach">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Category</label>
-                        <select id="tpl-cat" class="mt-1 block w-full border rounded p-2 text-sm">
-                            <option value="b2b">B2B Templates</option>
-                            <option value="event">Event Templates</option>
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Subject Line</label>
-                    <input type="text" id="tpl-subject" class="mt-1 block w-full border rounded p-2 text-sm" placeholder="Quick question for {Company}">
-                </div>
-                <div class="border rounded-md overflow-hidden">
-                    <div class="rte-toolbar bg-gray-50 border-b p-2 flex space-x-1">
-                        <button type="button" onclick="document.execCommand('bold', false, null)" title="Bold"><i class="ph ph-text-b"></i></button>
-                        <button type="button" onclick="document.execCommand('italic', false, null)" title="Italic"><i class="ph ph-text-italic"></i></button>
-                        <button type="button" onclick="document.execCommand('underline', false, null)" title="Underline"><i class="ph ph-text-underline"></i></button>
-                        <div class="w-px h-6 bg-gray-300 mx-2"></div>
-                        <button type="button" onclick="document.execCommand('insertUnorderedList', false, null)" title="Bullet List"><i class="ph ph-list-bullets"></i></button>
-                        <button type="button" onclick="document.execCommand('insertOrderedList', false, null)" title="Numbered List"><i class="ph ph-list-numbers"></i></button>
-                        <div class="flex-1"></div>
-                        <div class="text-xs text-gray-400 flex items-center">Vars: {Name}, {Company}</div>
-                    </div>
-                    <div id="tpl-body" class="p-4 min-h-[200px] outline-none prose prose-sm max-w-none" contenteditable="true" placeholder="Type your email body here..."></div>
-                </div>
-            </div>
-            <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3 rounded-b-xl">
-                <button onclick="app.ui.closeModal('modal-template')" class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
-                <button onclick="app.actions.saveTemplate()" class="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 shadow-sm">Save Template</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Campaign & Add Leads Modal -->
-    <div id="modal-campaign" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
-            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-medium">Create Campaign & Add Leads</h3>
-                <button onclick="app.ui.closeModal('modal-campaign')" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-xl"></i></button>
-            </div>
-            <div class="p-6 overflow-y-auto space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Campaign Name</label>
-                    <input type="text" id="camp-name" class="mt-1 block w-full border rounded p-2 text-sm" placeholder="Q3 Founders Outreach">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Select Template for Campaign</label>
-                    <select id="camp-template" class="block w-full border rounded p-2 text-sm"></select>
-                </div>
-                <div class="border-t pt-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Import Method</label>
-                    <div class="flex space-x-4 mb-4 border-b">
-                        <button class="lead-tab active text-blue-600 border-b-2 border-blue-600 pb-1 text-sm font-medium" data-target="panel-csv">Upload CSV</button>
-                        <button class="lead-tab text-gray-500 hover:text-gray-700 pb-1 text-sm font-medium" data-target="panel-paste">Paste Text</button>
-                        <button class="lead-tab text-gray-500 hover:text-gray-700 pb-1 text-sm font-medium" data-target="panel-manual">Manual Add</button>
-                    </div>
-
-                    <!-- Panels -->
-                    <div id="panel-csv" class="lead-panel">
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
-                            <i class="ph ph-file-csv text-3xl text-gray-400 mb-2"></i>
-                            <p class="text-sm text-gray-600 mb-2">Upload a CSV file. Expected columns: email, first_name, company</p>
-                            <input type="file" id="file-csv" accept=".csv" class="text-sm">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Replies Detected</h3>
+                                <div class="p-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg"><i class="ph-bold ph-arrow-u-left-up"></i></div>
+                            </div>
+                            <span id="dash-replies" class="text-3xl font-bold text-gray-800 dark:text-white">0</span>
                         </div>
                     </div>
-                    <div id="panel-paste" class="lead-panel hidden">
-                        <textarea id="text-paste" class="w-full border rounded p-2 text-sm font-mono" rows="4" placeholder="email, first_name, company&#10;john@apple.com, John, Apple Inc"></textarea>
-                    </div>
-                    <div id="panel-manual" class="lead-panel hidden grid grid-cols-3 gap-2">
-                        <input type="email" id="man-email" placeholder="Email" class="border p-2 text-sm rounded">
-                        <input type="text" id="man-name" placeholder="First Name" class="border p-2 text-sm rounded">
-                        <input type="text" id="man-company" placeholder="Company" class="border p-2 text-sm rounded">
+                    
+                    <!-- Quick Actions -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <button onclick="switchView('compose')" class="bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-xl shadow-sm border border-transparent transition-all text-left group">
+                            <div class="flex items-center justify-between">
+                                <span class="text-lg font-bold">Compose Campaign</span>
+                                <i class="ph-bold ph-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                            </div>
+                            <p class="text-blue-100 mt-2 text-sm">Use templates and import CSVs.</p>
+                        </button>
+                        <button onclick="switchView('settings')" class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-white p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all text-left group">
+                            <div class="flex items-center justify-between">
+                                <span class="text-lg font-bold">Configuration</span>
+                                <i class="ph-bold ph-gear group-hover:rotate-45 transition-transform text-gray-400"></i>
+                            </div>
+                            <p class="text-gray-500 dark:text-gray-400 mt-2 text-sm">Client ID Setup & Rules.</p>
+                        </button>
                     </div>
                 </div>
             </div>
-            <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3 rounded-b-xl">
-                <button onclick="app.ui.closeModal('modal-campaign')" class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
-                <button onclick="app.actions.createCampaignAndQueue()" class="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 shadow-sm">Process Leads & Queue</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Container -->
-    <div id="toast-container" class="fixed top-5 right-5 z-[60] flex flex-col space-y-2 pointer-events-none"></div>
-
-    <script>
-        // --- Core Application Logic ---
-        const app = {
-            state: {
-                settings: { clientId: '', minDelay: 10, maxDelay: 30 },
-                templates: { b2b: [], event: [] },
-                campaigns: [],
-                queue: [],
-                sentLogs: [],
-                dailyCount: { date: new Date().toISOString().split('T')[0], count: 0 },
-                auth: { token: null, expiresAt: null, userEmail: null }
-            },
-            runtime: {
-                isSending: false,
-                sendTimer: null,
-                currentTab: 'b2b',
-                leadImportMethod: 'csv',
-                tokenClient: null
-            },
             
-            // --- Initialization & Storage ---
-            init() {
-                this.loadState();
-                this.setupDOM();
-                this.router('dashboard');
-                this.updateUI();
-                
-                // Try init Google GIS if client ID exists
-                if (this.state.settings.clientId) {
-                    this.initGoogleAuth();
-                }
-            },
-            loadState() {
-                const saved = localStorage.getItem('outreachState');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    this.state = { ...this.state, ...parsed };
-                    // Check daily reset
-                    const today = new Date().toISOString().split('T')[0];
-                    if (this.state.dailyCount.date !== today) {
-                        this.state.dailyCount = { date: today, count: 0 };
-                    }
-                }
-            },
-            saveState() {
-                localStorage.setItem('outreachState', JSON.stringify(this.state));
-                this.updateUI(); // Trigger reactive update
-            },
-
-            // --- Authentication (Google Identity Services) ---
-            initGoogleAuth() {
-                if (!window.google) {
-                    setTimeout(() => this.initGoogleAuth(), 500); // Poll for script load
-                    return;
-                }
-                this.runtime.tokenClient = window.google.accounts.oauth2.initTokenClient({
-                    client_id: this.state.settings.clientId,
-                    scope: 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly',
-                    callback: (tokenResponse) => {
-                        if (tokenResponse && tokenResponse.access_token) {
-                            this.state.auth.token = tokenResponse.access_token;
-                            this.state.auth.expiresAt = Date.now() + (tokenResponse.expires_in * 1000);
-                            this.ui.toast('Successfully connected to Gmail!', 'success');
-                            this.fetchUserProfile();
-                            this.updateUI();
-                        }
-                    },
-                });
-            },
-            async fetchUserProfile() {
-                 try {
-                    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
-                        headers: { 'Authorization': `Bearer ${this.state.auth.token}` }
-                    });
-                    const data = await res.json();
-                    if(data.emailAddress) {
-                        this.state.auth.userEmail = data.emailAddress;
-                        document.getElementById('auth-text').innerText = data.emailAddress;
-                    }
-                } catch(e) { console.error(e); }
-            },
-            requestAuth() {
-                if (!this.state.settings.clientId) {
-                    this.ui.toast('Please configure Client ID in Settings first.', 'error');
-                    this.router('settings');
-                    return false;
-                }
-                if (!this.runtime.tokenClient) this.initGoogleAuth();
-                this.runtime.tokenClient.requestAccessToken({prompt: 'consent'});
-            },
-            checkAuth() {
-                if (this.state.auth.token && this.state.auth.expiresAt > Date.now()) return true;
-                return false;
-            },
-
-            // --- UI & Routing ---
-            router(viewId) {
-                document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-                document.querySelectorAll('.nav-item').forEach(el => {
-                    el.classList.remove('bg-gray-100', 'text-gray-900');
-                    el.classList.add('text-gray-600');
-                });
-                
-                const targetView = document.getElementById(`view-${viewId}`);
-                if(targetView) targetView.classList.remove('hidden');
-                
-                const navBtn = document.querySelector(`[data-route="${viewId}"]`);
-                if(navBtn) {
-                    navBtn.classList.remove('text-gray-600');
-                    navBtn.classList.add('bg-gray-100', 'text-gray-900');
-                }
-
-                const titles = { dashboard: 'Dashboard', campaigns: 'Campaigns', templates: 'Templates', queue: 'Sending Queue', logs: 'Sent History', quicksend: 'Quick Send', settings: 'Settings' };
-                document.getElementById('view-title').innerText = titles[viewId] || 'Outreach Pro';
-
-                if(viewId === 'settings') this.ui.populateSettings();
-                if(viewId === 'quicksend') this.ui.populateTemplateSelects();
-            },
-            ui: {
-                toast(msg, type = 'info') {
-                    const container = document.getElementById('toast-container');
-                    const el = document.createElement('div');
-                    const colors = { success: 'bg-green-50 text-green-800 border-green-200', error: 'bg-red-50 text-red-800 border-red-200', info: 'bg-blue-50 text-blue-800 border-blue-200' };
-                    const icons = { success: 'ph-check-circle text-green-500', error: 'ph-warning-circle text-red-500', info: 'ph-info text-blue-500' };
-                    
-                    el.className = `toast-enter flex items-center p-4 mb-2 border rounded-lg shadow-sm ${colors[type]}`;
-                    el.innerHTML = `<i class="ph ${icons[type]} text-xl mr-3"></i><div class="text-sm font-medium">${msg}</div>`;
-                    container.appendChild(el);
-                    
-                    setTimeout(() => {
-                        el.classList.replace('toast-enter', 'toast-exit');
-                        setTimeout(() => el.remove(), 300);
-                    }, 4000);
-                },
-                openModal(id) { document.getElementById(id).classList.remove('hidden'); },
-                closeModal(id) { document.getElementById(id).classList.add('hidden'); },
-                
-                populateSettings() {
-                    document.getElementById('set-clientid').value = app.state.settings.clientId;
-                    document.getElementById('set-min').value = app.state.settings.minDelay;
-                    document.getElementById('set-max').value = app.state.settings.maxDelay;
-                },
-                
-                openTemplateModal(id = null) {
-                    const modalTitle = document.getElementById('modal-tpl-title');
-                    const inputs = ['id', 'name', 'cat', 'subject', 'body'];
-                    
-                    if (id) {
-                        modalTitle.innerText = "Edit Template";
-                        let tpl = app.state.templates.b2b.find(t => t.id === id) || app.state.templates.event.find(t => t.id === id);
-                        if(tpl) {
-                            document.getElementById('tpl-id').value = tpl.id;
-                            document.getElementById('tpl-name').value = tpl.name;
-                            document.getElementById('tpl-cat').value = app.state.templates.b2b.find(t=>t.id===id) ? 'b2b' : 'event';
-                            document.getElementById('tpl-subject').value = tpl.subject;
-                            document.getElementById('tpl-body').innerHTML = tpl.body;
-                        }
-                    } else {
-                        modalTitle.innerText = "New Template";
-                        inputs.forEach(i => {
-                            let el = document.getElementById(`tpl-${i}`);
-                            if(i==='body') el.innerHTML = ''; else el.value = '';
-                        });
-                        document.getElementById('tpl-cat').value = app.runtime.currentTab;
-                    }
-                    this.openModal('modal-template');
-                },
-                openCampaignModal() {
-                    document.getElementById('camp-name').value = '';
-                    app.ui.populateTemplateSelects();
-                    document.getElementById('file-csv').value = '';
-                    document.getElementById('text-paste').value = '';
-                    ['email', 'name', 'company'].forEach(i => document.getElementById(`man-${i}`).value = '');
-                    this.openModal('modal-campaign');
-                },
-                populateTemplateSelects() {
-                    const allTpls = [...app.state.templates.b2b, ...app.state.templates.event];
-                    let html = '<option value="">-- Select Template --</option>';
-                    allTpls.forEach(t => html += `<option value="${t.id}">${t.name}</option>`);
-                    document.getElementById('camp-template').innerHTML = html;
-                    document.getElementById('qs-template').innerHTML = html;
-                }
-            },
-            setupDOM() {
-                // Nav Router
-                document.getElementById('nav-menu').addEventListener('click', (e) => {
-                    const btn = e.target.closest('[data-route]');
-                    if(btn) this.router(btn.dataset.route);
-                });
-                
-                // Auth Button
-                document.getElementById('btn-auth').addEventListener('click', () => {
-                    if(!this.checkAuth()) this.requestAuth();
-                });
-
-                // Engine Button
-                document.getElementById('btn-engine-toggle').addEventListener('click', () => {
-                    if(this.runtime.isSending) this.engine.stop(); else this.engine.start();
-                });
-
-                // Template Tabs
-                document.getElementById('template-tabs').addEventListener('click', (e) => {
-                    if(e.target.tagName === 'BUTTON') {
-                        document.querySelectorAll('#template-tabs button').forEach(b => {
-                            b.classList.remove('active', 'text-blue-600', 'border-blue-600', 'border-b-2');
-                            b.classList.add('text-gray-500');
-                        });
-                        e.target.classList.add('active', 'text-blue-600', 'border-blue-600', 'border-b-2');
-                        e.target.classList.remove('text-gray-500');
-                        this.runtime.currentTab = e.target.dataset.cat;
-                        this.renderTemplates();
-                    }
-                });
-
-                // Lead Import Tabs
-                document.querySelectorAll('.lead-tab').forEach(tab => {
-                    tab.addEventListener('click', (e) => {
-                        document.querySelectorAll('.lead-tab').forEach(b => {
-                            b.classList.remove('active', 'text-blue-600', 'border-blue-600', 'border-b-2');
-                            b.classList.add('text-gray-500');
-                        });
-                        e.target.classList.add('active', 'text-blue-600', 'border-blue-600', 'border-b-2');
-                        e.target.classList.remove('text-gray-500');
+            <!-- SETTINGS VIEW -->
+            <div id="view-settings" class="hidden-view max-w-2xl mx-auto fade-in">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800 dark:text-white"><i class="ph ph-sliders"></i> Configuration</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Google Cloud Client ID</label>
+                            <input type="text" id="client-id-input" placeholder="e.g., 123456789-abc.apps.googleusercontent.com" 
+                                class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow bg-white dark:bg-gray-700 dark:text-white">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Required for secure Gmail connection. <a href="https://console.cloud.google.com/" target="_blank" class="text-blue-600 dark:text-blue-400 underline">Get it here</a>.
+                            </p>
+                        </div>
+                        <button onclick="saveSettings()" class="bg-gray-800 dark:bg-gray-700 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors">Save ID</button>
                         
-                        document.querySelectorAll('.lead-panel').forEach(p => p.classList.add('hidden'));
-                        document.getElementById(e.target.dataset.target).classList.remove('hidden');
-                        this.runtime.leadImportMethod = e.target.dataset.target.replace('panel-', '');
-                    });
-                });
-            },
+                        <!-- TROUBLESHOOTING SECTION -->
+                        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4 mt-4" id="trouble-section">
+                            <h4 class="text-sm font-bold text-red-800 dark:text-red-300 flex items-center gap-2">
+                                <i class="ph ph-warning-octagon"></i> Troubleshooting: "Error 400"
+                            </h4>
+                            <div id="trouble-content" class="text-xs text-red-700 dark:text-red-300 mt-2">
+                                <!-- JS will populate this -->
+                                <p class="mb-2">If you see <strong>redirect_uri_mismatch</strong>, check the URL below:</p>
+                                <code class="bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/50 px-2 py-0.5 rounded font-mono select-all block mb-2 w-max" id="current-origin">...</code>
+                                <ol class="list-decimal list-inside space-y-1">
+                                    <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="underline font-bold">Google Cloud Credentials</a>.</li>
+                                    <li>Edit your <strong>OAuth 2.0 Client ID</strong>.</li>
+                                    <li>Add the URL above to <strong>Authorized JavaScript origins</strong>.</li>
+                                    <li>Save and wait 5 minutes.</li>
+                                </ol>
+                            </div>
+                        </div>
 
-            // --- Core Actions ---
-            actions: {
-                saveSettings() {
-                    app.state.settings.clientId = document.getElementById('set-clientid').value.trim();
-                    app.state.settings.minDelay = parseInt(document.getElementById('set-min').value) || 10;
-                    app.state.settings.maxDelay = parseInt(document.getElementById('set-max').value) || 30;
-                    app.saveState();
-                    app.ui.toast('Settings saved successfully', 'success');
-                    if(app.state.settings.clientId && !app.runtime.tokenClient) app.initGoogleAuth();
-                },
-                saveTemplate() {
-                    const id = document.getElementById('tpl-id').value || 'tpl_' + Date.now();
-                    const cat = document.getElementById('tpl-cat').value;
-                    const data = {
-                        id,
-                        name: document.getElementById('tpl-name').value,
-                        subject: document.getElementById('tpl-subject').value,
-                        body: document.getElementById('tpl-body').innerHTML
-                    };
-                    
-                    if(!data.name || !data.subject) return app.ui.toast('Name and Subject are required', 'error');
+                        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-4 mt-4">
+                            <h4 class="text-sm font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
+                                <i class="ph ph-shield-check"></i> Safety & Reach Rules
+                            </h4>
+                            <ul class="list-disc list-inside text-xs text-blue-700 dark:text-blue-300 mt-2 space-y-1">
+                                <li>Max 100 emails per day hard limit.</li>
+                                <li><strong>New:</strong> 2-3 minute random delay (Natural pacing).</li>
+                                <li><strong>New:</strong> Spintax support to prevent spam flagging.</li>
+                                <li><strong>New:</strong> Reply detection to stop messaging leads who respond.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                    // Remove from old if changed
-                    app.state.templates.b2b = app.state.templates.b2b.filter(t => t.id !== id);
-                    app.state.templates.event = app.state.templates.event.filter(t => t.id !== id);
-                    
-                    app.state.templates[cat].push(data);
-                    app.saveState();
-                    app.ui.closeModal('modal-template');
-                    app.ui.toast('Template saved!', 'success');
-                    app.renderTemplates();
-                },
-                deleteTemplate(id, cat) {
-                    if(!confirm('Delete this template?')) return;
-                    app.state.templates[cat] = app.state.templates[cat].filter(t => t.id !== id);
-                    app.saveState();
-                    app.renderTemplates();
-                },
-                async createCampaignAndQueue() {
-                    const name = document.getElementById('camp-name').value;
-                    const tplId = document.getElementById('camp-template').value;
-                    if(!name || !tplId) return app.ui.toast('Campaign name and template required.', 'error');
-
-                    let leads = [];
-                    const method = app.runtime.leadImportMethod;
-
-                    try {
-                        if (method === 'csv') {
-                            const file = document.getElementById('file-csv').files[0];
-                            if(!file) return app.ui.toast('Select a CSV file', 'error');
-                            const text = await file.text();
-                            leads = app.utils.parseCSV(text);
-                        } else if (method === 'paste') {
-                            const text = document.getElementById('text-paste').value;
-                            leads = app.utils.parseCSV(text); // Reuse logic assuming CSV structure
-                        } else if (method === 'manual') {
-                            const e = document.getElementById('man-email').value;
-                            if(e) leads.push({ email: e, first_name: document.getElementById('man-name').value, company: document.getElementById('man-company').value });
-                        }
-
-                        if(leads.length === 0) return app.ui.toast('No valid leads found.', 'error');
-
-                        const campId = 'cmp_' + Date.now();
-                        app.state.campaigns.push({ id: campId, name, date: new Date().toLocaleDateString() });
-
-                        // Queue items
-                        leads.forEach(l => {
-                            if(l.email && l.email.includes('@')) {
-                                app.state.queue.push({
-                                    id: 'q_' + Math.random().toString(36).substr(2, 9),
-                                    campaignId: campId,
-                                    campaignName: name,
-                                    templateId: tplId,
-                                    email: l.email.trim(),
-                                    name: l.first_name || l.name || '',
-                                    company: l.company || '',
-                                    status: 'pending'
-                                });
-                            }
-                        });
-
-                        app.saveState();
-                        app.ui.closeModal('modal-campaign');
-                        app.ui.toast(`Added ${leads.length} leads to queue!`, 'success');
-                        app.router('queue');
-
-                    } catch (err) {
-                        app.ui.toast('Error processing leads.', 'error');
-                        console.error(err);
-                    }
-                },
-                clearQueue() {
-                    if(confirm('Clear all pending items?')) {
-                        app.state.queue = [];
-                        app.saveState();
-                    }
-                },
-                removeQueueItem(id) {
-                    app.state.queue = app.state.queue.filter(q => q.id !== id);
-                    app.saveState();
-                },
-                async quickSend() {
-                    if(!app.checkAuth()) return app.ui.toast('Please connect Gmail first', 'error');
-                    
-                    const to = document.getElementById('qs-email').value;
-                    const tplId = document.getElementById('qs-template').value;
-                    if(!to || !tplId) return app.ui.toast('Email and Template required.', 'error');
-                    
-                    const data = {
-                        email: to,
-                        name: document.getElementById('qs-name').value,
-                        company: document.getElementById('qs-company').value,
-                        templateId: tplId
-                    };
-                    
-                    try {
-                        const btn = event.currentTarget;
-                        btn.disabled = true; btn.innerHTML = '<i class="ph ph-spinner animate-spin mr-2"></i> Sending...';
+            <!-- COMPOSE VIEW -->
+            <div id="view-compose" class="hidden-view max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 fade-in">
+                <div class="md:col-span-2 space-y-4">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
+                        <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800 dark:text-white"><i class="ph ph-pencil-simple"></i> Compose Email</h2>
                         
-                        await app.engine.sendEmail(data, 'Manual Quick Send');
-                        app.ui.toast('Email sent successfully!', 'success');
-                        
-                        // Clear
-                        document.getElementById('qs-email').value = '';
-                        document.getElementById('qs-name').value = '';
-                        document.getElementById('qs-company').value = '';
-                    } catch (e) {
-                        app.ui.toast(e.message || 'Send failed', 'error');
-                    } finally {
-                        const btn = document.querySelector('#view-quicksend button');
-                        btn.disabled = false; btn.innerHTML = '<i class="ph ph-paper-plane-right mr-2"></i> Send Now';
-                    }
-                },
-                async scanReplies() {
-                    if(!app.checkAuth()) return app.ui.toast('Please connect Gmail first', 'error');
-                    app.ui.toast('Scanning Inbox...', 'info');
-                    
-                    try {
-                        // Fetch recent messages
-                        const query = `label:INBOX newer_than:14d`;
-                        const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=50`, {
-                            headers: { 'Authorization': `Bearer ${app.state.auth.token}` }
-                        });
-                        const listData = await listRes.json();
-                        
-                        if(!listData.messages) return app.ui.toast('No recent messages found.', 'info');
-
-                        let matchCount = 0;
-                        for(let msg of listData.messages) {
-                            const detailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=From`, {
-                                headers: { 'Authorization': `Bearer ${app.state.auth.token}` }
-                            });
-                            const detail = await detailRes.json();
-                            const fromHeader = detail.payload.headers.find(h => h.name === 'From');
+                        <!-- Templates Section -->
+                        <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-800">
+                            <div class="flex justify-between items-end mb-1">
+                                <label class="block text-xs font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wide">Load Template</label>
+                                <div class="flex gap-2">
+                                     <button id="btn-delete-template" onclick="deleteTemplate()" class="hidden text-xs text-red-500 hover:text-red-700 font-bold flex items-center gap-1">
+                                        <i class="ph-bold ph-trash"></i> Delete
+                                    </button>
+                                    <button onclick="saveAsNewTemplate()" class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-bold flex items-center gap-1">
+                                        <i class="ph-bold ph-plus"></i> Save Current
+                                    </button>
+                                </div>
+                            </div>
+                            <span class="text-[10px] text-blue-600 dark:text-blue-400 font-normal normal-case block mb-2">Pro Tip: Use {Name}, {Company}</span>
                             
-                            if(fromHeader) {
-                                // Extract email from "Name <email@domain.com>"
-                                const emailMatch = fromHeader.value.match(/<([^>]+)>/) || [null, fromHeader.value];
-                                const fromEmail = emailMatch[1].trim().toLowerCase();
-                                
-                                // Check against sent logs
-                                const logEntry = app.state.sentLogs.find(l => l.email.toLowerCase() === fromEmail && !l.replied);
-                                if(logEntry) {
-                                    logEntry.replied = true;
-                                    matchCount++;
-                                }
-                            }
-                        }
-                        
-                        if(matchCount > 0) app.saveState();
-                        app.ui.toast(`Scan complete. Found ${matchCount} new replies!`, 'success');
-                        
-                    } catch (e) {
-                        console.error(e);
-                        app.ui.toast('Error scanning replies', 'error');
-                    }
-                },
-                queueFollowUps() {
-                    const nonRepliers = app.state.sentLogs.filter(l => !l.replied);
-                    if(nonRepliers.length === 0) return app.ui.toast('No eligible contacts for follow-up.', 'info');
-                    
-                    // Simple logic: put them back in queue. In real life, need a new template selection.
-                    // For UI flow demo, we ask for confirmation and open campaign modal with these emails pre-filled.
-                    if(confirm(`Found ${nonRepliers.length} non-repliers. Create a follow-up campaign?`)) {
-                        const csvText = "email,first_name,company\n" + nonRepliers.map(l => `${l.email},${l.name},${l.company}`).join('\n');
-                        app.ui.openCampaignModal();
-                        document.querySelector('[data-target="panel-paste"]').click();
-                        document.getElementById('text-paste').value = csvText;
-                        document.getElementById('camp-name').value = "Follow Up Campaign";
-                    }
-                },
-                generateReport() {
-                    const logs = app.state.sentLogs;
-                    const thisMonth = new Date().getMonth();
-                    const monthLogs = logs.filter(l => new Date(l.date).getMonth() === thisMonth);
-                    
-                    const total = monthLogs.length;
-                    const replies = monthLogs.filter(l => l.replied).length;
-                    const rate = total > 0 ? Math.round((replies/total)*100) : 0;
-
-                    let tableHtml = monthLogs.map(l => `
-                        <tr>
-                            <td style="padding:8px;border-bottom:1px solid #ddd;">${new Date(l.date).toLocaleDateString()}</td>
-                            <td style="padding:8px;border-bottom:1px solid #ddd;">${l.email}</td>
-                            <td style="padding:8px;border-bottom:1px solid #ddd;">${l.replied ? '<span style="color:green">Yes</span>' : 'No'}</td>
-                        </tr>
-                    `).join('');
-
-                    const html = `
-                        <html><head><title>Monthly Report</title>
-                        <style>body{font-family:sans-serif;padding:40px;color:#333;} table{width:100%;border-collapse:collapse;} th{text-align:left;background:#f5f5f5;padding:10px;} </style>
-                        </head><body>
-                            <h1>Outreach Report - Current Month</h1>
-                            <div style="display:flex; gap: 20px; margin-bottom:30px;">
-                                <div style="padding:20px; background:#f0f9ff; border-radius:8px;"><h3>Total Sent</h3><p style="font-size:24px;margin:0"><b>${total}</b></p></div>
-                                <div style="padding:20px; background:#f0fdf4; border-radius:8px;"><h3>Replies</h3><p style="font-size:24px;margin:0"><b>${replies}</b></p></div>
-                                <div style="padding:20px; background:#f5f3ff; border-radius:8px;"><h3>Reply Rate</h3><p style="font-size:24px;margin:0"><b>${rate}%</b></p></div>
-                            </div>
-                            <h2>Details</h2>
-                            <table><thead><tr><th>Date</th><th>Email</th><th>Replied</th></tr></thead><tbody>${tableHtml}</tbody></table>
-                        </body></html>
-                    `;
-                    const win = window.open('', '_blank');
-                    win.document.write(html);
-                    win.document.close();
-                    setTimeout(() => win.print(), 500);
-                },
-                exportData() {
-                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(app.state));
-                    const dlAnchorElem = document.createElement('a');
-                    dlAnchorElem.setAttribute("href", dataStr);
-                    dlAnchorElem.setAttribute("download", `outreach_backup_${new Date().getTime()}.json`);
-                    dlAnchorElem.click();
-                },
-                importData(event) {
-                    const file = event.target.files[0];
-                    if(!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        try {
-                            const parsed = JSON.parse(e.target.result);
-                            if(parsed.settings && parsed.queue) {
-                                app.state = parsed;
-                                app.saveState();
-                                app.ui.toast('Data imported successfully!', 'success');
-                            } else throw new Error("Invalid format");
-                        } catch(err) {
-                            app.ui.toast('Failed to parse JSON backup file.', 'error');
-                        }
-                    };
-                    reader.readAsText(file);
-                }
-            },
-
-            // --- Sending Engine ---
-            engine: {
-                start() {
-                    if(!app.checkAuth()) return app.ui.toast('Please connect to Gmail first to start engine.', 'error');
-                    if(app.state.queue.length === 0) return app.ui.toast('Queue is empty.', 'info');
-                    if(app.state.dailyCount.count >= 100) return app.ui.toast('Daily limit of 100 emails reached.', 'error');
-
-                    app.runtime.isSending = true;
-                    app.ui.toast('Sending Engine Started', 'success');
-                    this.updateUI();
-                    this.loop();
-                },
-                stop() {
-                    app.runtime.isSending = false;
-                    clearTimeout(app.runtime.sendTimer);
-                    this.updateUI();
-                },
-                updateUI() {
-                    const ind = document.getElementById('engine-indicator');
-                    const text = document.getElementById('engine-status');
-                    const btn = document.getElementById('btn-engine-toggle');
-                    
-                    if(app.runtime.isSending) {
-                        ind.className = "w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse";
-                        text.innerHTML = ind.outerHTML + "Engine Running";
-                        btn.innerHTML = '<i class="ph-fill ph-pause mr-2"></i> Pause Sending';
-                        btn.className = "px-4 py-2 bg-yellow-500 text-white text-sm font-medium rounded-md hover:bg-yellow-600 shadow-sm flex items-center transition-colors";
-                    } else {
-                        ind.className = "w-2 h-2 rounded-full bg-gray-400 mr-2";
-                        text.innerHTML = ind.outerHTML + "Engine Idle";
-                        btn.innerHTML = '<i class="ph-fill ph-play mr-2"></i> Start Sending';
-                        btn.className = "px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 shadow-sm flex items-center transition-colors";
-                    }
-                },
-                async loop() {
-                    if(!app.runtime.isSending) return;
-                    
-                    if(app.state.dailyCount.count >= 100) {
-                        app.ui.toast('Daily limit reached. Engine stopped.', 'warning');
-                        this.stop(); return;
-                    }
-
-                    const pending = app.state.queue.find(q => q.status === 'pending');
-                    if(!pending) {
-                        app.ui.toast('Queue processing complete.', 'info');
-                        this.stop(); return;
-                    }
-
-                    try {
-                        await this.sendEmail(pending, pending.campaignName);
-                        // Remove from queue
-                        app.state.queue = app.state.queue.filter(q => q.id !== pending.id);
-                        app.saveState();
-                    } catch (e) {
-                        console.error('Send error:', e);
-                        pending.status = 'error';
-                        app.saveState();
-                        app.ui.toast(`Failed to send to ${pending.email}`, 'error');
-                    }
-
-                    // Calculate Delay
-                    const min = app.state.settings.minDelay * 1000;
-                    const max = app.state.settings.maxDelay * 1000;
-                    const delay = Math.floor(Math.random() * (max - min + 1)) + min;
-                    
-                    if(app.runtime.isSending && app.state.queue.length > 0) {
-                        document.getElementById('engine-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500 mr-2 animate-pulse"></span> Waiting ${Math.round(delay/1000)}s...`;
-                        app.runtime.sendTimer = setTimeout(() => this.loop(), delay);
-                    } else {
-                        this.stop();
-                    }
-                },
-                async sendEmail(data, campaignName) {
-                    // Find Template
-                    const allTpls = [...app.state.templates.b2b, ...app.state.templates.event];
-                    const tpl = allTpls.find(t => t.id === data.templateId);
-                    if(!tpl) throw new Error("Template not found");
-
-                    // Parse Variables & Spintax
-                    let subject = app.utils.parseSpintax(app.utils.replaceVars(tpl.subject, data));
-                    let bodyHtml = app.utils.parseSpintax(app.utils.replaceVars(tpl.body, data));
-
-                    // Construct MIME
-                    const rawEmail = app.utils.createMimeMessage(data.email, subject, bodyHtml);
-
-                    // API Call
-                    const res = await fetch('https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${app.state.auth.token}`,
-                            'Content-Type': 'message/rfc822'
-                        },
-                        body: rawEmail
-                    });
-
-                    if(!res.ok) {
-                        const err = await res.json();
-                        throw new Error(err.error?.message || "API Error");
-                    }
-
-                    // Success - Log it
-                    const respData = await res.json();
-                    app.state.dailyCount.count++;
-                    app.state.sentLogs.unshift({
-                        id: 'log_' + Date.now(),
-                        date: new Date().toISOString(),
-                        email: data.email,
-                        name: data.name,
-                        company: data.company,
-                        campaign: campaignName,
-                        subject: subject,
-                        messageId: respData.id,
-                        replied: false
-                    });
-                    
-                    // Keep logs manageable in localstorage (max 1000)
-                    if(app.state.sentLogs.length > 1000) app.state.sentLogs.pop();
-                }
-            },
-
-            // --- Utilities ---
-            utils: {
-                replaceVars(text, data) {
-                    if(!text) return '';
-                    return text.replace(/{Name}/gi, data.name || '')
-                               .replace(/{Company}/gi, data.company || '');
-                },
-                parseSpintax(text) {
-                    if(!text) return '';
-                    const spintaxRegex = /{([^{}]*)}/g;
-                    let result = text;
-                    let match;
-                    while ((match = spintaxRegex.exec(result)) !== null) {
-                        const options = match[1].split('|');
-                        const randomChoice = options[Math.floor(Math.random() * options.length)];
-                        result = result.substring(0, match.index) + randomChoice + result.substring(match.index + match[0].length);
-                        spintaxRegex.lastIndex = 0; // Reset regex due to string length change
-                    }
-                    return result;
-                },
-                parseCSV(text) {
-                    const lines = text.trim().split('\n');
-                    if(lines.length < 2) return [];
-                    const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
-                    
-                    const idxEmail = headers.findIndex(h => h.includes('email'));
-                    const idxName = headers.findIndex(h => h.includes('name') || h.includes('first'));
-                    const idxComp = headers.findIndex(h => h.includes('company'));
-                    
-                    if(idxEmail === -1) throw new Error("Could not find 'email' column");
-
-                    const results = [];
-                    for(let i=1; i<lines.length; i++) {
-                        // Simple split, doesn't handle complex quoted CSVs perfectly but good for raw copy-paste
-                        const row = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-                        if(row[idxEmail]) {
-                            results.push({
-                                email: row[idxEmail],
-                                first_name: idxName > -1 ? row[idxName] : '',
-                                company: idxComp > -1 ? row[idxComp] : ''
-                            });
-                        }
-                    }
-                    return results;
-                },
-                createMimeMessage(to, subject, htmlBody) {
-                    // Safe Base64URL encoding for utf-8
-                    const utf8ToBase64 = (str) => {
-                        return btoa(unescape(encodeURIComponent(str)));
-                    };
-                    
-                    const subjB64 = `utf-8?B?${utf8ToBase64(subject)}?=`;
-
-                    const messageParts = [
-                        `To: ${to}`,
-                        `Subject: =?${subjB64}`,
-                        `Content-Type: text/html; charset=utf-8`,
-                        `MIME-Version: 1.0`,
-                        ``,
-                        htmlBody
-                    ];
-
-                    const message = messageParts.join('\r\n');
-                    
-                    // Encode raw message to Base64URL required by Gmail API
-                    const encodedMessage = btoa(unescape(encodeURIComponent(message)))
-                        .replace(/\+/g, '-')
-                        .replace(/\//g, '_')
-                        .replace(/=+$/, '');
-                    
-                    return encodedMessage;
-                }
-            },
-
-            // --- Render Logic (Reactive-ish) ---
-            updateUI() {
-                // Dashboard stats
-                document.getElementById('dash-sent-today').innerHTML = `${this.state.dailyCount.count} <span class="text-sm font-normal text-gray-500">/ 100 limit</span>`;
-                document.getElementById('dash-queue-count').innerText = this.state.queue.length;
-                document.getElementById('dash-total-sent').innerText = this.state.sentLogs.length;
-                document.getElementById('dash-replies').innerText = this.state.sentLogs.filter(l=>l.replied).length;
-                
-                document.getElementById('nav-queue-count').innerText = this.state.queue.length;
-                if(this.state.auth.userEmail) document.getElementById('auth-text').innerText = this.state.auth.userEmail;
-
-                this.renderTemplates();
-                this.renderCampaigns();
-                this.renderQueue();
-                this.renderLogs();
-            },
-            renderTemplates() {
-                const list = document.getElementById('templates-list');
-                const tpls = this.state.templates[this.runtime.currentTab] || [];
-                
-                if(tpls.length === 0) {
-                    list.innerHTML = `<div class="col-span-2 text-center py-8 text-gray-500 text-sm border-2 border-dashed rounded-lg">No templates in this category. Click 'New Template' to create one.</div>`;
-                    return;
-                }
-
-                list.innerHTML = tpls.map(t => `
-                    <div class="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white relative group">
-                        <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
-                            <button onclick="app.ui.openTemplateModal('${t.id}')" class="p-1 text-gray-400 hover:text-blue-500"><i class="ph ph-pencil-simple"></i></button>
-                            <button onclick="app.actions.deleteTemplate('${t.id}', '${this.runtime.currentTab}')" class="p-1 text-gray-400 hover:text-red-500"><i class="ph ph-trash"></i></button>
+                            <select id="template-select" onchange="handleTemplateChange(this.value)" class="w-full border border-blue-200 dark:border-blue-800 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white cursor-pointer">
+                                <!-- Options populated by JS -->
+                            </select>
                         </div>
-                        <h4 class="font-semibold text-gray-800 pr-12">${t.name}</h4>
-                        <p class="text-xs text-gray-500 mt-1 truncate" title="${t.subject}">Subj: ${t.subject}</p>
-                        <div class="mt-3 pt-3 border-t text-sm text-gray-600 line-clamp-3">${t.body.replace(/<[^>]*>?/gm, '')}</div>
+
+                        <div class="space-y-4 flex-1 flex flex-col">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
+                                <input id="email-subject" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow bg-white dark:bg-gray-700 dark:text-white">
+                            </div>
+                            <div class="flex-1 flex flex-col">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex justify-between">
+                                    <span>Body</span>
+                                    <span class="text-gray-400 dark:text-gray-500 font-normal text-xs">Vars: {Name}, {Company}</span>
+                                </label>
+                                
+                                <!-- RICH TEXT EDITOR TOOLBAR -->
+                                <div class="border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden transition-shadow focus-within:ring-2 focus-within:ring-blue-500 bg-white dark:bg-gray-700 flex-1 flex flex-col">
+                                    <div class="flex items-center gap-1 p-2 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+                                        <button onclick="formatDoc('bold')" class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-700 dark:text-gray-300" title="Bold"><i class="ph-bold ph-text-b"></i></button>
+                                        <button onclick="formatDoc('italic')" class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-700 dark:text-gray-300" title="Italic"><i class="ph-bold ph-text-i"></i></button>
+                                        <button onclick="formatDoc('underline')" class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-700 dark:text-gray-300" title="Underline"><i class="ph-bold ph-text-u"></i></button>
+                                        <div class="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                                        <button onclick="formatDoc('insertUnorderedList')" class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-700 dark:text-gray-300" title="Bullet List"><i class="ph-bold ph-list-bullets"></i></button>
+                                        <button onclick="formatDoc('insertOrderedList')" class="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-700 dark:text-gray-300" title="Numbered List"><i class="ph-bold ph-list-numbers"></i></button>
+                                    </div>
+                                    <div id="email-body" contenteditable="true" class="w-full p-3 text-sm outline-none flex-1 overflow-y-auto min-h-[300px] text-gray-800 dark:text-white font-sans"></div>
+                                </div>
+
+                            </div>
+                        </div>
                     </div>
-                `).join('');
-            },
-            renderCampaigns() {
-                const tbody = document.getElementById('campaigns-tbody');
-                if(this.state.campaigns.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-gray-500 text-sm">No campaigns created yet.</td></tr>`;
-                    return;
-                }
-                tbody.innerHTML = this.state.campaigns.map(c => `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><i class="ph ph-folder text-blue-500 mr-2"></i>${c.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${c.date}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button class="text-gray-400 hover:text-gray-600" title="Campaign actions restricted in simple view"><i class="ph ph-dots-three"></i></button>
-                        </td>
-                    </tr>
-                `).reverse().join('');
-            },
-            renderQueue() {
-                const tbody = document.getElementById('queue-tbody');
-                if(this.state.queue.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500 text-sm">Queue is empty.</td></tr>`;
-                    return;
-                }
+                </div>
 
-                // Get template names map for display
-                const tplMap = {};
-                [...this.state.templates.b2b, ...this.state.templates.event].forEach(t => tplMap[t.id] = t.name);
+                <div class="space-y-4">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <h3 class="font-bold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4 border-b dark:border-gray-700 pb-2">Campaign Controls</h3>
+                        
+                        <div id="control-buttons">
+                            <button id="btn-start" onclick="toggleSending(true)" class="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-md font-medium transition-all shadow-sm hover:shadow mb-3">
+                                <i class="ph ph-play-circle text-lg"></i>
+                                <span>Start Campaign</span>
+                            </button>
+                            <button id="btn-pause" onclick="toggleSending(false)" class="hidden w-full flex items-center justify-center space-x-2 bg-orange-100 hover:bg-orange-200 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 py-2.5 rounded-md font-medium transition-colors mb-3">
+                                <i class="ph ph-pause-circle text-lg"></i>
+                                <span>Pause Campaign</span>
+                            </button>
+                        </div>
 
-                tbody.innerHTML = this.state.queue.map(q => `
-                    <tr class="hover:bg-gray-50 ${q.status==='error'?'bg-red-50':''}">
-                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-600">${q.campaignName}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900">
-                            <div>${q.email}</div>
-                            ${q.company ? `<div class="text-xs text-gray-500">${q.name} @ ${q.company}</div>` : ''}
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">${tplMap[q.templateId] || 'Unknown'}</td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${q.status==='pending'?'bg-yellow-100 text-yellow-800':'bg-red-100 text-red-800'}">${q.status}</span>
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                            <button onclick="app.actions.removeQueueItem('${q.id}')" class="text-red-400 hover:text-red-600 ml-2" title="Delete"><i class="ph ph-trash"></i></button>
-                        </td>
-                    </tr>
-                `).join('');
+                        <!-- TEST EMAIL SECTION (NEW) -->
+                        <div class="mb-6 pt-4 border-t border-gray-100 dark:border-gray-700">
+                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Quick Send (Single Email)</label>
+                            <div class="flex gap-2">
+                                <input id="test-email-input" type="email" placeholder="recipient@email.com" class="flex-1 border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white">
+                                <button onclick="sendSingleEmail()" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-500 px-3 py-1.5 rounded-md text-xs font-medium transition-colors">
+                                    Send Now
+                                </button>
+                            </div>
+                        </div>
+
+                        <p id="auth-warning" class="text-xs text-red-500 dark:text-red-400 mt-2 text-center hidden">Connect Gmail to start.</p>
+                        
+                        <div class="mt-2 pt-4 border-t border-gray-100 dark:border-gray-700">
+                            <h3 class="font-bold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">Add Leads</h3>
+                            
+                            <!-- MANUAL ENTRY (NEW) -->
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Quick Add / Paste List</label>
+                                <textarea id="manual-input" placeholder="email@example.com, Name, Company&#10;another@example.com" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white h-24 resize-none mb-2"></textarea>
+                                <button onclick="handleManualAdd()" class="w-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-medium py-2 rounded-md transition-colors border border-gray-200 dark:border-gray-600">
+                                    Add to Queue
+                                </button>
+                            </div>
+
+                            <div class="flex items-center gap-2 my-4">
+                                <div class="h-px bg-gray-200 dark:bg-gray-700 flex-1"></div>
+                                <span class="text-[10px] text-gray-400 uppercase">OR</span>
+                                <div class="h-px bg-gray-200 dark:bg-gray-700 flex-1"></div>
+                            </div>
+
+                            <label class="w-full flex flex-col items-center justify-center space-y-2 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 cursor-pointer rounded-lg py-6 text-gray-500 dark:text-gray-400 hover:text-blue-600 transition-colors bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 group">
+                                <div class="p-2 bg-white dark:bg-gray-600 rounded-full shadow-sm group-hover:scale-110 transition-transform">
+                                    <i class="ph ph-upload-simple text-xl dark:text-gray-200"></i>
+                                </div>
+                                <span class="text-sm font-medium">Upload CSV</span>
+                                <input type="file" accept=".csv" onchange="handleFileUpload(this)" class="hidden" />
+                            </label>
+                            <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-2 text-center">Format: email, first_name, company</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUEUE VIEW -->
+            <div id="view-queue" class="hidden-view fade-in">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-700">
+                        <h2 class="text-lg font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i class="ph ph-list-dashes"></i> Outbox Queue</h2>
+                        <button onclick="clearQueue()" class="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium hover:underline flex items-center gap-1">
+                            <i class="ph ph-trash"></i> Clear All
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 font-medium border-b border-gray-200 dark:border-gray-600">
+                                <tr>
+                                    <th class="px-6 py-3 w-16">#</th>
+                                    <th class="px-6 py-3">Email</th>
+                                    <th class="px-6 py-3">Name</th>
+                                    <th class="px-6 py-3">Company</th>
+                                    <th class="px-6 py-3">Status</th>
+                                    <th class="px-6 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="queue-table-body" class="divide-y divide-gray-100 dark:divide-gray-700">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SENT VIEW -->
+            <div id="view-sent" class="hidden-view fade-in">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 flex flex-wrap justify-between items-center gap-4">
+                        <h2 class="text-lg font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i class="ph ph-paper-plane-right"></i> Sent History</h2>
+                        <div class="flex space-x-2">
+                             <button onclick="checkInboxForReplies()" class="flex items-center space-x-1.5 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-500 hover:text-blue-600 dark:hover:text-blue-300 px-3 py-1.5 rounded-md text-xs font-medium transition-colors shadow-sm">
+                                <i class="ph ph-arrows-clockwise"></i>
+                                <span>Scan Replies</span>
+                            </button>
+                            <button onclick="queueFollowUps()" class="flex items-center space-x-1.5 bg-blue-600 text-white hover:bg-blue-700 px-3 py-1.5 rounded-md text-xs font-medium transition-colors shadow-sm">
+                                <i class="ph ph-paper-plane-tilt"></i>
+                                <span>Follow Up Non-Repliers</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 font-medium border-b border-gray-200 dark:border-gray-600">
+                                <tr>
+                                    <th class="px-6 py-3 w-16">#</th>
+                                    <th class="px-6 py-3">Time</th>
+                                    <th class="px-6 py-3">Email</th>
+                                    <th class="px-6 py-3">Status</th>
+                                    <th class="px-6 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sent-table-body" class="divide-y divide-gray-100 dark:divide-gray-700">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOLLOW UPS VIEW (NEW) -->
+            <div id="view-followups" class="hidden-view fade-in">
+                <div class="max-w-2xl mx-auto">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <h2 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-800 dark:text-white">
+                            <i class="ph ph-arrows-clockwise"></i> Follow Up Management
+                        </h2>
+                        
+                        <div class="space-y-6">
+                            <!-- Step 1: Scan -->
+                            <div class="p-5 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                                <div class="flex items-start gap-3">
+                                    <div class="mt-1 bg-white dark:bg-gray-600 p-2 rounded-full shadow-sm text-gray-600 dark:text-gray-300">
+                                        <i class="ph-bold ph-magnifying-glass"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-sm text-gray-800 dark:text-white">Step 1: Check for Replies</h3>
+                                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 mb-3">Scan your Gmail inbox. Any contact who replied will be marked as "Replied" in your Sent Logs so they don't get a follow-up.</p>
+                                        <button onclick="checkInboxForReplies()" class="flex items-center space-x-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-500 hover:text-blue-700 dark:hover:text-blue-300 px-4 py-2 rounded-md text-sm font-medium transition-all shadow-sm">
+                                            <span>Scan Inbox Now</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Queue -->
+                            <div class="p-5 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                                <div class="flex items-start gap-3">
+                                    <div class="mt-1 bg-white dark:bg-gray-600 p-2 rounded-full shadow-sm text-blue-600 dark:text-blue-300">
+                                        <i class="ph-bold ph-paper-plane-tilt"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-sm text-blue-900 dark:text-blue-300">Step 2: Queue Follow-Ups</h3>
+                                        <p class="text-sm text-blue-700 dark:text-blue-400 mt-1 mb-3">Automatically add all contacts who have <strong>not</strong> replied yet to your Outbox Queue.</p>
+                                        <button onclick="queueFollowUps()" class="flex items-center space-x-2 bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-all shadow-sm">
+                                            <span>Add Non-Repliers to Queue</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500 text-center">
+                            Tip: Update your email template in the "Compose" tab before adding contacts to the queue.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- CONFIGURATION ---
+        // ⬇️⬇️⬇️ PASTE YOUR CLIENT ID HERE ⬇️⬇️⬇️
+        const EMBEDDED_CLIENT_ID = "195749587118-dg3i2gogrq13bns5i2llivlafr21ncav.apps.googleusercontent.com";
+        // ⬆️⬆️⬆️ PASTE YOUR CLIENT ID HERE ⬆️⬆️⬆️
+
+        // --- CONSTANTS & CONFIG ---
+        // Removed BLOCKED_PREFIXES usage as requested to allow all emails
+        
+        // --- TEMPLATES ---
+        const SIGNATURE = `\n\n---\n📧 deepak@mobi-hub.com\n📞 +44 7379 320338\n🌍 https://www.mobi-hub.co.uk/`;
+
+        const DEFAULT_TEMPLATES = {
+            intro: {
+                name: "Mobi Hub Introduction (General)",
+                subject: "Introduction: Connecting with Buying Team - Mobi Hub",
+                body: `Hello {Name},
+
+I hope you’re doing well.
+
+My name is Deepak, and I represent the sales team at Mobi Hub. We specialize in supplying used iPhones and Samsung devices across Europe and the UAE, supported by warehouses in Germany and the Netherlands.
+
+I’m reaching out to kindly request a connection with your buying/purchasing team to understand your current and upcoming sourcing requirements and explore potential cooperation.
+
+Please let me know the appropriate contact person, or feel free to forward this email to the relevant team.
+
+Thank you for your time and support. I look forward to connecting.
+
+Best regards,
+Deepak
+Mobi Hub` + SIGNATURE
             },
-            renderLogs() {
-                const tbody = document.getElementById('logs-tbody');
-                if(this.state.sentLogs.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500 text-sm">No emails sent yet.</td></tr>`;
-                    return;
-                }
-                tbody.innerHTML = this.state.sentLogs.map(l => `
-                    <tr class="hover:bg-gray-50 ${l.replied ? 'bg-green-50' : ''}">
-                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">${new Date(l.date).toLocaleString()}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${l.email}</td>
-                        <td class="px-4 py-3 text-xs text-gray-600 max-w-xs truncate" title="${l.subject}">${l.subject}</td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            ${l.replied 
-                                ? `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"><i class="ph ph-check-circle mr-1"></i>Replied</span>`
-                                : `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Sent</span>`
-                            }
-                        </td>
-                    </tr>
-                `).join('');
+            sourcing_connect: {
+                name: "Connecting with Sourcing Team",
+                subject: "Connecting with Sourcing Team - Mobi Hub Supply",
+                body: `Hello {Name},
+
+I hope this email finds you well.
+
+I am reaching out to connect specifically with the sourcing and procurement team at {Company}.
+
+Mobi Hub specializes in the consistent supply of high-quality used iPhones and Samsungs from our EU distribution centers. We are currently looking to onboard new B2B partners who require reliable stock of ASIS, A-Grade, and CPO devices.
+
+Could you please direct me to the right person to discuss your current inventory needs?
+
+Best regards,
+Deepak
+Mobi Hub` + SIGNATURE
+            },
+            client_onboard: {
+                name: "New Client Onboarding",
+                subject: "Welcome to Mobi Hub - Account Setup for {Company}",
+                body: `Hello {Name},
+
+Welcome aboard! We are thrilled to have {Company} as a new partner.
+
+I wanted to formally introduce myself as your dedicated account manager at Mobi Hub. My goal is to ensure you have seamless access to our weekly stock of used iPhones and Samsungs from our German and Dutch warehouses.
+
+Please let me know if you have any specific grading requirements or model preferences so I can tailor our offers for you.
+
+Looking forward to a successful partnership.
+
+Best regards,
+Deepak
+Mobi Hub` + SIGNATURE
+            },
+            welcome: {
+                name: "Welcome Email",
+                subject: "Welcome to the Mobi Hub Network",
+                body: `Hello {Name},
+
+Thank you for your interest in Mobi Hub. It is great to connect with you.
+
+We are a leading supplier of used mobile devices across the EU and UAE. We take pride in our strict grading standards and reliable logistics.
+
+I will keep you updated with our latest stock lists and special offers. If you have an immediate requirement for iPhones or Samsungs, please reply to this email, and I will check our inventory for you right away.
+
+Best regards,
+Deepak
+Mobi Hub` + SIGNATURE
+            },
+            christmas: {
+                name: "Christmas Update",
+                subject: "Holiday Greetings & Stock Update from Mobi Hub",
+                body: `Hello {Name},
+
+Merry Christmas and Happy Holidays to you and the team at {Company}!
+
+As the holiday season approaches, I wanted to wish you a wonderful break.
+
+We are also releasing our final stock list for the year from our Germany warehouse. If you need any last-minute stock before the holidays, please let me know as soon as possible so we can arrange shipment.
+
+Warmest wishes,
+Deepak
+Mobi Hub` + SIGNATURE
+            },
+            new_year: {
+                name: "New Year Update",
+                subject: "Happy New Year: 2026 Outlook from Mobi Hub",
+                body: `Hello {Name},
+
+Happy New Year! I hope you had a restful break and are ready for a prosperous year ahead.
+
+At Mobi Hub, we are kicking off the year with fresh stock arriving daily at our EU warehouses. We are committed to supporting {Company}'s growth this year with consistent supply and competitive pricing on used iPhones and Samsungs.
+
+Let's make this year our best one yet.
+
+Best regards,
+Deepak
+Mobi Hub` + SIGNATURE
+            },
+            stock: {
+                name: "Weekly Stock Update",
+                subject: "Stock Update: Fresh iPhones available in Germany",
+                body: `Hello {Name},
+
+This is Deepak from Mobi Hub again.
+
+I wanted to give you a quick update on our latest stock landing in our Germany warehouse. We have a fresh batch of iPhones (ASIS+ and CPO grades) ready for immediate shipment.
+
+Are you looking for any specific models this week? If you send over your requirements or target prices, I can check our inventory for {Company} specifically.
+
+Looking forward to supporting your supply chain.
+
+Best,
+Deepak
+Mobi Hub` + SIGNATURE
+            },
+            buying_list: {
+                name: "Requesting Buying List",
+                subject: "Partnership Inquiry: Sourcing Requirements",
+                body: `Hello {Name},
+
+We are expanding our distribution for the upcoming month at Mobi Hub. Since we handle large volumes of used iPhones and Samsungs in the EU, I want to make sure we are stocking what you actually need.
+
+Could you share your current buying list or the models you are most short on?
+
+I’m confident we can offer competitive pricing for {Company}'s regular volume.
+
+Best regards,
+Deepak
+Mobi Hub` + SIGNATURE
+            },
+            followup_1: {
+                name: "Follow Up: Quick Bump",
+                subject: "Just checking in - Stock requirements",
+                body: `Hello {Name},
+
+Bubbling this to the top of your inbox.
+
+Did you have a chance to review my previous email regarding our stock of iPhones/Samsungs in Germany?
+
+I'd love to add {Company} to our distribution list for next week's offers if you are interested.
+
+Best,
+Deepak
+Mobi Hub` + SIGNATURE
+            },
+            meeting_request: {
+                name: "Meeting Request: Supply Discussion",
+                subject: "Quick chat: Supply Discussion",
+                body: `Hello {Name},
+
+Are you available for a brief 5-minute call this week?
+
+I'd like to understand {Company}'s grading requirements better so I can send you only relevant offers from our EU/UAE warehouses.
+
+Let me know what works for you.
+
+Best,
+Deepak
+Mobi Hub` + SIGNATURE
+            },
+            quality_focus: {
+                name: "Variation 1: Quality Assurance Focus",
+                subject: "Premium Grade Stock Availability",
+                body: `Hello {Name},
+
+Hope you are doing well.
+
+At Mobi Hub, we prioritize consistency. I know how frustrating "grading slippage" can be when buying used devices.
+
+We just received a new shipment of strictly graded iPhones (A/A+ and CPO) at our Germany warehouse. Every device undergoes a 30-point check to ensure your customers get exactly what they pay for.
+
+Would you be open to testing a small sample order to verify our quality?
+
+Best,
+Deepak
+Mobi Hub` + SIGNATURE
+            },
+            price_match: {
+                name: "Variation 2: Competitive Pricing",
+                subject: "Margin Opportunities on Apple Stock",
+                body: `Hello {Name},
+
+Hope you are doing well.
+
+I'm reviewing our pricing for the upcoming week and noticed we have some excellent margin opportunities on iPhone 12 and 13 series (ASIS+ and CPO).
+
+Since we supply directly from our EU warehouses, we can offer rates that might beat your current suppliers.
+
+If you share your target buy prices for {Company}, I’ll do my best to match or beat them.
+
+Best,
+Deepak
+Mobi Hub` + SIGNATURE
+            },
+            reliable_partner: {
+                name: "Variation 3: Reliable Supply Chain",
+                subject: "Reliable EU Supply Partner Proposal",
+                body: `Hello {Name},
+
+Hope you are doing well.
+
+Supply chain stability is key in our business. I’m writing to introduce Mobi Hub as a reliable partner for your used iPhone and Samsung needs.
+
+With warehouses in Germany and the Netherlands, we offer fast, duty-free shipping within the EU. We have consistent weekly stock of ASIS, A-Grade, and CPO devices.
+
+Can we hop on a quick call to discuss how we can support {Company}'s growth this quarter?
+
+Best,
+Deepak
+Mobi Hub` + SIGNATURE
             }
         };
 
-        // Boot
-        document.addEventListener('DOMContentLoaded', () => app.init());
+        let allTemplates = {};
+
+        function initTemplates() {
+             const custom = JSON.parse(localStorage.getItem('gsafe_custom_templates') || '{}');
+             allTemplates = { ...DEFAULT_TEMPLATES, ...custom };
+             
+             const select = document.getElementById('template-select');
+             select.innerHTML = '<option value="">Select a template...</option>';
+             
+             for (const key in allTemplates) {
+                 const t = allTemplates[key];
+                 const option = document.createElement('option');
+                 option.value = key;
+                 option.textContent = t.name;
+                 select.appendChild(option);
+             }
+        }
+
+        function handleTemplateChange(key) {
+            loadTemplate(key);
+            toggleDeleteButton(key);
+        }
+
+        function loadTemplate(key) {
+            if (!key || !allTemplates[key]) return;
+            const t = allTemplates[key];
+            
+            // Update State
+            state.body = t.body;
+            state.subject = t.subject;
+            
+            // Update UI
+            document.getElementById('email-body').innerHTML = t.body.replace(/\n/g, '<br>');
+            document.getElementById('email-subject').value = t.subject;
+            
+            // Save to LocalStorage
+            localStorage.setItem('gsafe_body', t.body.replace(/\n/g, '<br>'));
+            localStorage.setItem('gsafe_subject', t.subject);
+        }
+
+        function toggleDeleteButton(key) {
+            const btn = document.getElementById('btn-delete-template');
+            // Only show delete button for custom templates (ids starting with 'custom_')
+            if (key && key.startsWith('custom_')) {
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+
+        function saveAsNewTemplate() {
+            const subject = document.getElementById('email-subject').value;
+            const body = document.getElementById('email-body').innerHTML;
+            
+            if (!subject || !body) {
+                alert("Please enter a subject and body first.");
+                return;
+            }
+
+            const name = prompt("Enter a name for this template:");
+            if (name) {
+                const id = 'custom_' + Date.now();
+                const newTemplate = {
+                    name: name,
+                    subject: subject,
+                    body: body
+                };
+
+                const custom = JSON.parse(localStorage.getItem('gsafe_custom_templates') || '{}');
+                custom[id] = newTemplate;
+                localStorage.setItem('gsafe_custom_templates', JSON.stringify(custom));
+                
+                initTemplates();
+                alert("Template saved!");
+                
+                // Select the new template
+                document.getElementById('template-select').value = id;
+                toggleDeleteButton(id);
+            }
+        }
+
+        function deleteTemplate() {
+            const select = document.getElementById('template-select');
+            const key = select.value;
+            
+            if (!key || !key.startsWith('custom_')) {
+                alert("Cannot delete built-in templates.");
+                return;
+            }
+
+            if (confirm("Are you sure you want to delete this template?")) {
+                const custom = JSON.parse(localStorage.getItem('gsafe_custom_templates') || '{}');
+                delete custom[key];
+                localStorage.setItem('gsafe_custom_templates', JSON.stringify(custom));
+                
+                initTemplates();
+                toggleDeleteButton(""); // Reset button visibility
+                alert("Template deleted.");
+            }
+        }
+
+        // --- EDITOR LOGIC ---
+        function formatDoc(cmd, value = null) {
+            if (value) {
+                document.execCommand(cmd, false, value);
+            } else {
+                document.execCommand(cmd);
+            }
+            document.getElementById('email-body').focus();
+        }
+
+        // --- STATE MANAGEMENT ---
+        const state = {
+            token: null,
+            userProfile: null,
+            isSending: false,
+            // Use embedded ID first, then local storage, then empty string
+            clientId: EMBEDDED_CLIENT_ID !== "PASTE_YOUR_CLIENT_ID_HERE" ? EMBEDDED_CLIENT_ID : (localStorage.getItem('gsafe_client_id') || ''),
+            subject: localStorage.getItem('gsafe_subject') || '',
+            body: localStorage.getItem('gsafe_body') || 'Hello {Name},<br><br>I noticed that {Company} is doing great work...<br><br>Best,<br>[Your Name]' + SIGNATURE.replace(/\n/g, '<br>'),
+            queue: JSON.parse(localStorage.getItem('gsafe_queue') || '[]'),
+            sentLog: JSON.parse(localStorage.getItem('gsafe_sent_log') || '[]'),
+            nextSendTime: 0
+        };
+
+        // --- INIT ---
+        window.onload = function() {
+            // Check Dark Mode
+            if (localStorage.getItem('gsafe_theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+
+            initTemplates(); // Initialize templates dropdown
+
+            // Restore UI inputs
+            document.getElementById('client-id-input').value = state.clientId;
+            document.getElementById('email-subject').value = state.subject;
+            document.getElementById('email-body').innerHTML = state.body;
+            
+            // DETECT ORIGIN FOR TROUBLESHOOTING
+            const origin = window.location.origin;
+            const protocol = window.location.protocol;
+            const troubleContent = document.getElementById('trouble-content');
+            
+            if (protocol === 'file:') {
+                 troubleContent.innerHTML = `
+                    <p class="font-bold text-red-800 dark:text-red-300 mb-2">⚠️ YOU ARE RUNNING THIS AS A FILE (file://)</p>
+                    <p class="mb-2">Google Security blocks file paths. You must run a local server:</p>
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>Open Terminal/Command Prompt in this folder.</li>
+                        <li>Run: <code class="bg-gray-800 text-white px-2 py-0.5 rounded">python -m http.server 8000</code></li>
+                        <li>Open this link: <a href="http://localhost:8000/tool.html" class="underline font-bold text-blue-700 dark:text-blue-400">http://localhost:8000/tool.html</a></li>
+                        <li>Add <code>http://localhost:8000</code> to your Google Cloud "Authorized Origins".</li>
+                    </ol>
+                 `;
+            } else {
+                 document.getElementById('current-origin').textContent = origin;
+            }
+
+            // Start loop using Web Worker to prevent background throttling
+            const workerBlob = new Blob([`
+                self.onmessage = function(e) {
+                    if (e.data === 'start') {
+                        self.timer = setInterval(function() {
+                            self.postMessage('tick');
+                        }, 1000);
+                    } else if (e.data === 'stop') {
+                        clearInterval(self.timer);
+                    }
+                };
+            `], { type: "text/javascript" });
+            
+            const worker = new Worker(window.URL.createObjectURL(workerBlob));
+            
+            worker.onmessage = function(e) {
+                if (e.data === 'tick') {
+                    processQueue();
+                }
+            };
+            
+            // Start the worker
+            worker.postMessage('start');
+
+            // Initial render
+            switchView('dashboard'); // Default view is now Dashboard
+            updateDashboard();
+            renderQueue();
+            renderSentLog();
+            
+            // Listeners for auto-saving inputs
+            document.getElementById('client-id-input').addEventListener('input', (e) => {
+                state.clientId = e.target.value;
+                localStorage.setItem('gsafe_client_id', state.clientId);
+            });
+            document.getElementById('email-subject').addEventListener('input', (e) => {
+                state.subject = e.target.value;
+                localStorage.setItem('gsafe_subject', state.subject);
+            });
+            document.getElementById('email-body').addEventListener('input', (e) => {
+                state.body = e.target.innerHTML;
+                localStorage.setItem('gsafe_body', state.body);
+            });
+        };
+
+        // --- NAVIGATION ---
+        function switchView(viewName) {
+            // Hide all views
+            ['dashboard', 'settings', 'compose', 'queue', 'sent', 'followups'].forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                if (el) el.classList.add('hidden-view');
+                
+                const btn = document.getElementById(`nav-${v}`);
+                if (btn) {
+                    btn.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-700', 'dark:bg-blue-900/50', 'dark:text-blue-300', 'dark:border-blue-500');
+                    btn.classList.add('text-gray-600', 'hover:bg-gray-50', 'border-transparent', 'dark:text-gray-300', 'dark:hover:bg-gray-700');
+                }
+            });
+
+            // Show selected
+            document.getElementById(`view-${viewName}`).classList.remove('hidden-view');
+            const btn = document.getElementById(`nav-${viewName}`);
+            btn.classList.remove('text-gray-600', 'hover:bg-gray-50', 'border-transparent', 'dark:text-gray-300', 'dark:hover:bg-gray-700');
+            btn.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-700', 'dark:bg-blue-900/50', 'dark:text-blue-300', 'dark:border-blue-500');
+        }
+
+        // --- DARK MODE ---
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem('gsafe_theme', 'light');
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('gsafe_theme', 'dark');
+            }
+        }
+
+        // --- AUTH ---
+        function initGoogleAuth() {
+            if (!state.clientId) {
+                alert("Please enter a Google Client ID in Settings first.");
+                switchView('settings');
+                return;
+            }
+
+            const client = google.accounts.oauth2.initTokenClient({
+                client_id: state.clientId,
+                scope: 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly',
+                callback: (tokenResponse) => {
+                    if (tokenResponse.access_token) {
+                        state.token = tokenResponse.access_token;
+                        fetchProfile(tokenResponse.access_token);
+                    }
+                },
+            });
+            client.requestAccessToken();
+        }
+
+        async function fetchProfile(token) {
+            try {
+                const res = await fetch('https://www.googleapis.com/gmail/v1/users/me/profile', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await res.json();
+                state.userProfile = data;
+                
+                // Update UI
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('user-section').classList.remove('hidden');
+                document.getElementById('user-email').textContent = data.emailAddress;
+                document.getElementById('auth-warning').classList.add('hidden');
+            } catch (e) {
+                console.error("Profile fetch failed", e);
+            }
+        }
+
+        function saveSettings() {
+            localStorage.setItem('gsafe_client_id', state.clientId);
+            alert('Settings Saved');
+        }
+
+        // --- CSV & MANUAL HANDLING ---
         
+        function handleManualAdd() {
+            const input = document.getElementById('manual-input').value;
+            if (!input.trim()) {
+                alert("Please paste some emails first.");
+                return;
+            }
+            
+            const lines = input.split('\n');
+            let addedCount = 0;
+            const seenEmails = new Set(state.queue.map(q => q.email));
+            const newContacts = [];
+
+            lines.forEach(line => {
+                if (!line.trim()) return;
+                
+                // Try to parse CSV-like line: email,name,company
+                const parts = line.split(',').map(p => p.trim());
+                const email = parts[0];
+                
+                if (email && email.includes('@') && !seenEmails.has(email)) {
+                    // Basic duplicate check against current queue
+                    newContacts.push({
+                        id: Date.now() + Math.random(),
+                        email: email,
+                        first_name: parts[1] || 'there',
+                        company: parts[2] || '',
+                        status: 'pending'
+                    });
+                    seenEmails.add(email);
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
+                state.queue = [...state.queue, ...newContacts];
+                saveQueue();
+                renderQueue();
+                updateDashboard();
+                alert(`Added ${addedCount} contacts to queue.`);
+                document.getElementById('manual-input').value = ''; // Clear input
+            } else {
+                alert("No new valid emails found.");
+            }
+        }
+
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const text = event.target.result;
+                const lines = text.split('\n');
+                const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+                
+                const newContacts = [];
+                const seenEmails = new Set(state.queue.map(q => q.email));
+                
+                const idxEmail = headers.findIndex(h => h.includes('email'));
+                const idxName = headers.findIndex(h => h.includes('first') || h.includes('name'));
+                const idxCompany = headers.findIndex(h => h.includes('company'));
+
+                if (idxEmail === -1) {
+                    alert("CSV must have an 'email' column header.");
+                    return;
+                }
+
+                let importedCount = 0;
+
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+                    // Regex to handle commas inside quotes
+                    const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g, ''));
+                    
+                    const email = row[idxEmail];
+                    const name = idxName > -1 ? row[idxName] : 'there';
+                    const company = idxCompany > -1 ? row[idxCompany] : '';
+
+                    if (!email || !email.includes('@')) continue;
+
+                    // Safety Checks
+                    // const prefix = email.split('@')[0].toLowerCase();
+                    // if (BLOCKED_PREFIXES.includes(prefix)) continue; // Removed filter
+                    
+                    if (seenEmails.has(email)) continue;
+
+                    newContacts.push({
+                        id: Date.now() + Math.random(),
+                        email,
+                        first_name: name,
+                        company,
+                        status: 'pending'
+                    });
+                    seenEmails.add(email);
+                    importedCount++;
+                }
+                
+                state.queue = [...state.queue, ...newContacts];
+                saveQueue();
+                renderQueue();
+                updateDashboard(); // Refresh stats
+                alert(`Imported ${importedCount} contacts.`); // Removed "safe" from message
+                input.value = ''; // Reset input
+            };
+            reader.readAsText(file);
+        }
+
+        // --- NEW FEATURES: SPINTAX & REPLIES ---
+        
+        // 1. Spintax: {Hi|Hello} -> Hello (random)
+        function processSpintax(text) {
+            return text.replace(/\{([^{}]+)\}/g, function(match, content) {
+                // If it contains "Name" or "Company" (placeholders), don't spin it
+                if (content.toLowerCase().includes('name') || content.toLowerCase().includes('company')) {
+                    return match;
+                }
+                const choices = content.split('|');
+                return choices[Math.floor(Math.random() * choices.length)];
+            });
+        }
+
+        // 2. Scan Inbox for Replies
+        async function checkInboxForReplies() {
+            if (!state.token) {
+                alert("Please connect Gmail first.");
+                return;
+            }
+            updateStatus("Scanning inbox for replies...");
+            
+            try {
+                // Fetch last 50 messages from inbox
+                const res = await fetch('https://www.googleapis.com/gmail/v1/users/me/messages?q=label:INBOX&maxResults=50', {
+                    headers: { Authorization: `Bearer ${state.token}` }
+                });
+                const data = await res.json();
+                
+                if (!data.messages) {
+                    alert("No new messages found in Inbox.");
+                    updateStatus("Scan complete.");
+                    return;
+                }
+
+                let replyCount = 0;
+                // Get list of emails we sent to
+                const sentEmails = state.sentLog.map(l => l.email);
+                
+                // For each message in inbox, check if From matches a sent email
+                for (let msg of data.messages) {
+                    const detailRes = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=From`, {
+                        headers: { Authorization: `Bearer ${state.token}` }
+                    });
+                    const detail = await detailRes.json();
+                    const fromHeader = detail.payload.headers.find(h => h.name === 'From');
+                    
+                    if (fromHeader) {
+                        const fromEmailMatch = fromHeader.value.match(/<([^>]+)>/) || [null, fromHeader.value];
+                        const fromEmail = fromEmailMatch[1] || fromHeader.value;
+                        
+                        // Check match
+                        const logIndex = state.sentLog.findIndex(l => l.email.toLowerCase() === fromEmail.toLowerCase() && l.status === 'sent');
+                        
+                        if (logIndex !== -1) {
+                            state.sentLog[logIndex].status = 'replied';
+                            replyCount++;
+                        }
+                    }
+                    // Small delay to be safe
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                
+                localStorage.setItem('gsafe_sent_log', JSON.stringify(state.sentLog));
+                renderSentLog();
+                updateDashboard(); // Update reply stats
+                alert(`Scan complete. Found ${replyCount} new replies.`);
+                updateStatus(`Found ${replyCount} replies.`);
+                
+            } catch (e) {
+                console.error(e);
+                alert("Error scanning inbox. Check console.");
+            }
+        }
+
+        // 3. Follow Up Logic
+        function queueFollowUps() {
+            const nonRepliers = state.sentLog.filter(l => l.status === 'sent');
+            if (nonRepliers.length === 0) {
+                alert("No non-repliers found to follow up with.");
+                return;
+            }
+            
+            const confirmed = confirm(`Found ${nonRepliers.length} contacts who haven't replied yet.\n\nAdd them to queue for follow-up? (Make sure to change your template first!)`);
+            
+            if (confirmed) {
+                const newBatch = nonRepliers.map(c => ({
+                    id: Date.now() + Math.random(),
+                    email: c.email,
+                    first_name: 'there', // Basic fallback as logs don't store names currently
+                    company: '',
+                    status: 'pending'
+                }));
+                
+                state.queue = [...state.queue, ...newBatch];
+                saveQueue();
+                renderQueue();
+                updateDashboard(); // Refresh stats
+                switchView('queue');
+                alert("Contacts added to queue. Please update your Subject/Body for the follow-up email.");
+            }
+        }
+
+        // --- TEST EMAIL LOGIC (NEW) ---
+        async function sendSingleEmail() {
+            const testEmail = document.getElementById('test-email-input').value;
+            if (!testEmail || !testEmail.includes('@')) {
+                alert('Please enter a valid recipient email address.');
+                return;
+            }
+            if (!state.token) {
+                alert('Please connect Gmail first.');
+                return;
+            }
+
+            const subject = document.getElementById('email-subject').value;
+            const body = document.getElementById('email-body').innerHTML;
+
+            // Fill with dummy data
+            const processedSubject = processSpintax(subject);
+            let processedBody = processSpintax(body);
+            
+            // Check for remaining variables
+            if (processedBody.includes('{Name}') || processedBody.includes('{Company}')) {
+                if(!confirm("Warning: Your email body still contains {Name} or {Company} placeholders. Send anyway?")) {
+                    return;
+                }
+            }
+
+            // Footer logic (same as processQueue)
+            if (!processedBody.includes("deepak@mobi-hub.com")) {
+                 processedBody += SIGNATURE.replace(/\n/g, '<br>');
+            }
+            if (!processedBody.includes("reply 'unsubscribe'")) {
+                processedBody += `<br><br>If this email isn't relevant, please reply 'unsubscribe' to let me know.`;
+            }
+
+            // Send
+            const emailContent = [
+                `To: ${testEmail}`,
+                `Subject: ${processedSubject}`,
+                `Content-Type: text/html; charset="UTF-8"`,
+                `MIME-Version: 1.0`,
+                ``,
+                processedBody
+            ].join('\n');
+
+            const raw = toBase64Url(emailContent);
+
+            try {
+                const res = await fetch('https://www.googleapis.com/gmail/v1/users/me/messages/send', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${state.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ raw })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error?.message || 'Send Failed');
+                }
+                
+                alert('Email sent to ' + testEmail);
+            } catch (e) {
+                alert('Error sending email: ' + e.message);
+                console.error(e);
+            }
+        }
+
+        // --- QUEUE ACTIONS (EDIT/DELETE) ---
+        function deleteItem(id) {
+            if (confirm('Remove this item from queue?')) {
+                state.queue = state.queue.filter(item => item.id !== id);
+                saveQueue();
+                renderQueue();
+                updateDashboard();
+            }
+        }
+
+        // --- SENT LOG ACTIONS (DELETE) ---
+        function deleteSentLog(id) {
+            if (confirm('Delete this log entry?')) {
+                // If logs don't have IDs (older version), this might fail, but new ones do.
+                // Fallback: if no ID, filter by timestamp? No, safer to rely on index if needed, 
+                // but let's assume objects are consistent.
+                // Actually, queue items have IDs, and we copy them to logs.
+                
+                // Finding index because filtering by object reference is tricky with persistence
+                const index = state.sentLog.findIndex(l => l.id === id);
+                if (index === -1) {
+                    // Fallback for legacy logs without ID: remove by index passed from UI?
+                    // Let's just filter by ID. If legacy logs lack ID, they might be stuck or need migration.
+                    // Simple fix: Filter.
+                     state.sentLog = state.sentLog.filter(l => l.id !== id);
+                } else {
+                    state.sentLog.splice(index, 1);
+                }
+                
+                localStorage.setItem('gsafe_sent_log', JSON.stringify(state.sentLog));
+                renderSentLog();
+                updateDashboard();
+            }
+        }
+
+        function openEditModal(id) {
+            const item = state.queue.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('edit-email').value = item.email || '';
+            document.getElementById('edit-name').value = item.first_name || '';
+            document.getElementById('edit-company').value = item.company || '';
+            
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        function saveEditItem() {
+            const id = parseFloat(document.getElementById('edit-id').value);
+            const email = document.getElementById('edit-email').value;
+            const name = document.getElementById('edit-name').value;
+            const company = document.getElementById('edit-company').value;
+
+            state.queue = state.queue.map(item => {
+                if (item.id === id) {
+                    return { ...item, email, first_name: name, company };
+                }
+                return item;
+            });
+
+            saveQueue();
+            renderQueue();
+            closeEditModal();
+        }
+
+        // --- SENDING LOGIC ---
+        function toggleSending(enable) {
+            if (enable && !state.token) {
+                alert("Please connect Gmail first.");
+                return;
+            }
+            state.isSending = enable;
+            
+            // Update UI
+            const btnStart = document.getElementById('btn-start');
+            const btnPause = document.getElementById('btn-pause');
+            const statusInd = document.getElementById('status-indicator');
+            const pausedInd = document.getElementById('paused-indicator');
+
+            if (enable) {
+                btnStart.classList.add('hidden');
+                btnPause.classList.remove('hidden');
+                statusInd.classList.remove('hidden');
+                pausedInd.classList.add('hidden');
+            } else {
+                btnStart.classList.remove('hidden');
+                btnPause.classList.add('hidden');
+                statusInd.classList.add('hidden');
+                pausedInd.classList.remove('hidden');
+                updateStatus("Paused by user");
+            }
+            updateDashboard(); // Sync dashboard status
+        }
+
+        function updateStatus(msg) {
+            document.getElementById('status-text').textContent = msg;
+        }
+
+        function getSentTodayCount() {
+            const today = new Date().toISOString().split('T')[0];
+            return state.sentLog.filter(log => log.date === today && log.status === 'sent').length;
+        }
+
+        function toBase64Url(str) {
+            return btoa(unescape(encodeURIComponent(str)))
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=+$/, '');
+        }
+
+        let isProcessing = false;
+
+        async function processQueue() {
+            updateDashboard(); // keep countdown updated if needed
+
+            if (!state.isSending || isProcessing || !state.token) return;
+
+            // Cooldown check
+            if (Date.now() < state.nextSendTime) {
+                const remaining = Math.ceil((state.nextSendTime - Date.now()) / 1000);
+                updateStatus(`Cooling down... ${remaining}s`);
+                return;
+            }
+
+            const pending = state.queue.find(item => item.status === 'pending');
+            
+            // Queue check
+            if (!pending) {
+                toggleSending(false);
+                updateStatus("Queue finished.");
+                return;
+            }
+
+            // Daily Limit Check
+            if (getSentTodayCount() >= 100) {
+                toggleSending(false);
+                updateStatus("Daily limit (100) reached.");
+                return;
+            }
+
+            // Send
+            isProcessing = true;
+            updateStatus(`Sending to ${pending.email}...`);
+
+            try {
+                // Prepare content with Spintax processing
+                let processedSubject = processSpintax(state.subject);
+                let processedBody = processSpintax(state.body);
+
+                // Variable replacement (Robust)
+                processedBody = processedBody
+                    .replace(/{{first_name}}/gi, pending.first_name || '') // Case insensitive
+                    .replace(/{first_name}/gi, pending.first_name || '')   // Single braces
+                    .replace(/{name}/gi, pending.first_name || '')         // Common alias
+                    .replace(/{{name}}/gi, pending.first_name || '')       // Common alias
+                    .replace(/{{company}}/gi, pending.company || '')       // Case insensitive
+                    .replace(/{company}/gi, pending.company || '');        // Single braces
+                
+                // SMART FOOTER LOGIC
+                // 1. Check if specific contact info is present (email is a good unique marker)
+                if (!processedBody.includes("deepak@mobi-hub.com")) {
+                     processedBody += SIGNATURE.replace(/\n/g, '<br>');
+                }
+                
+                // 2. Always append the Unsubscribe notice if it's missing (Compliance)
+                if (!processedBody.includes("reply 'unsubscribe'")) {
+                    processedBody += `<br><br>If this email isn't relevant, please reply 'unsubscribe' to let me know.`;
+                }
+
+                const emailContent = [
+                    `To: ${pending.email}`,
+                    `Subject: ${processedSubject}`,
+                    `Content-Type: text/html; charset="UTF-8"`,
+                    `MIME-Version: 1.0`,
+                    ``,
+                    processedBody
+                ].join('\n');
+
+                const raw = toBase64Url(emailContent);
+
+                const res = await fetch('https://www.googleapis.com/gmail/v1/users/me/messages/send', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${state.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ raw })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error?.message || 'Send Failed');
+                }
+
+                // Success
+                const now = new Date();
+                const newLog = {
+                    id: pending.id,
+                    email: pending.email,
+                    date: now.toISOString().split('T')[0],
+                    timestamp: now.toISOString(),
+                    status: 'sent'
+                };
+
+                state.sentLog.unshift(newLog);
+                localStorage.setItem('gsafe_sent_log', JSON.stringify(state.sentLog));
+                
+                // Remove from queue
+                state.queue = state.queue.filter(q => q.id !== pending.id);
+                saveQueue();
+                
+                updateStatus(`Sent to ${pending.email}`);
+
+            } catch (error) {
+                console.error(error);
+                // Mark failed
+                pending.status = 'failed';
+                pending.error = error.message;
+                saveQueue();
+                updateStatus(`Error: ${error.message}`);
+                toggleSending(false); // Safety pause
+            } finally {
+                isProcessing = false;
+                renderQueue();
+                renderSentLog();
+                updateDashboard();
+                
+                // Set cooldown: 2-3 minutes (120000ms base + 0-60000ms random)
+                const delay = 120000 + (Math.random() * 60000);
+                state.nextSendTime = Date.now() + delay;
+            }
+        }
+
+        // --- RENDERING HELPERS ---
+        function saveQueue() {
+            localStorage.setItem('gsafe_queue', JSON.stringify(state.queue));
+        }
+
+        function clearQueue() {
+            if(confirm("Clear entire queue?")) {
+                state.queue = [];
+                saveQueue();
+                renderQueue();
+                updateDashboard(); // Refresh stats
+            }
+        }
+
+        function updateDashboard() {
+            const count = getSentTodayCount();
+            
+            // Sidebar updates
+            const dailyCountEl = document.getElementById('daily-count');
+            if(dailyCountEl) dailyCountEl.textContent = count;
+            
+            const percent = Math.min((count / 100) * 100, 100);
+            const bar = document.getElementById('daily-bar');
+            if(bar) {
+                bar.style.width = `${percent}%`;
+                bar.className = `h-1.5 rounded-full transition-all duration-500 ${count >= 100 ? 'bg-red-500' : 'bg-blue-500'}`;
+            }
+
+            // Dashboard View updates
+            const dashSent = document.getElementById('dash-sent');
+            if(dashSent) dashSent.textContent = count;
+
+            const dashQueue = document.getElementById('dash-queue');
+            if(dashQueue) dashQueue.textContent = state.queue.filter(q => q.status === 'pending').length;
+
+            const dashReplies = document.getElementById('dash-replies');
+            if(dashReplies) dashReplies.textContent = state.sentLog.filter(l => l.status === 'replied').length;
+
+            const dashStatus = document.getElementById('dash-status');
+            if(dashStatus) {
+                if(state.isSending) {
+                    dashStatus.innerHTML = `<span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span> Running`;
+                    dashStatus.className = "text-lg font-bold text-green-600 flex items-center gap-2 md:justify-end";
+                } else {
+                    dashStatus.innerHTML = `<span class="w-3 h-3 rounded-full bg-gray-400"></span> Paused`;
+                    dashStatus.className = "text-lg font-bold text-gray-500 flex items-center gap-2 md:justify-end";
+                }
+            }
+        }
+
+        function renderQueue() {
+            const tbody = document.getElementById('queue-table-body');
+            if (state.queue.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-400 dark:text-gray-500">Queue is empty</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = state.queue.map((item, index) => `
+                <tr class="hover:bg-gray-50 border-b border-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
+                    <td class="px-6 py-3 text-gray-500 dark:text-gray-400 text-xs font-mono">${index + 1}</td>
+                    <td class="px-6 py-3 text-gray-800 dark:text-gray-200">${item.email}</td>
+                    <td class="px-6 py-3 text-gray-600 dark:text-gray-400">${item.first_name}</td>
+                    <td class="px-6 py-3 text-gray-600 dark:text-gray-400">${item.company}</td>
+                    <td class="px-6 py-3">
+                        ${item.status === 'pending' 
+                            ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200">Pending</span>'
+                            : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Failed</span>'
+                        }
+                    </td>
+                    <td class="px-6 py-3 text-right">
+                        ${item.status === 'pending' ? `
+                        <button onclick="openEditModal(${item.id})" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mr-3" title="Edit">
+                            <i class="ph-bold ph-pencil-simple"></i>
+                        </button>
+                        <button onclick="deleteItem(${item.id})" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" title="Remove">
+                            <i class="ph-bold ph-trash"></i>
+                        </button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // Date helper
+        function getOrdinal(n) {
+            const s = ["th", "st", "nd", "rd"];
+            const v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        }
+
+        function formatLogDate(isoStr) {
+            if (!isoStr) return '-';
+            const date = new Date(isoStr);
+            const day = getOrdinal(date.getDate());
+            const month = date.toLocaleString('en-US', { month: 'short' });
+            const year = date.getFullYear();
+            const time = date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            return `${day} ${month} ${year}, ${time}`;
+        }
+
+        function renderSentLog() {
+            const tbody = document.getElementById('sent-table-body');
+            if (state.sentLog.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-400 dark:text-gray-500">No emails sent yet</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = state.sentLog.map((log, index) => `
+                <tr class="hover:bg-gray-50 border-b border-gray-100 dark:border-gray-700 dark:hover:bg-gray-700 ${log.status === 'replied' ? 'bg-green-50 dark:bg-green-900/10' : ''}">
+                    <td class="px-6 py-3 text-gray-500 dark:text-gray-400 text-xs font-mono">${state.sentLog.length - index}</td>
+                    <td class="px-6 py-3 text-gray-600 dark:text-gray-400 text-xs font-mono">${formatLogDate(log.timestamp)}</td>
+                    <td class="px-6 py-3 text-gray-800 dark:text-gray-200">${log.email}</td>
+                    <td class="px-6 py-3">
+                        ${log.status === 'sent' 
+                           ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300">Sent</span>' 
+                           : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"><i class="ph-bold ph-arrow-u-left-up mr-1"></i> Replied</span>'
+                        }
+                    </td>
+                    <td class="px-6 py-3 text-right">
+                        <button onclick="deleteSentLog(${log.id})" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" title="Delete Log">
+                            <i class="ph-bold ph-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
     </script>
 </body>
 </html>
