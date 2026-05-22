@@ -752,7 +752,7 @@
                                 </div>
                             </div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                The queue will randomly wait between these values to mimic human sending and prevent spam detection. Default is 10 to 30 seconds.
+                                The queue will randomly wait between these values to mimic human sending and prevent spam detection. Default is 120 to 180 seconds.
                             </p>
                         </div>
                         
@@ -870,6 +870,7 @@
         };
 
         let currentContactId = null;
+        let queueLoopInterval = null;
 
         const getRawSignature = () => `\n\n---\n📧 ${state.signatureEmail}\n📞 ${state.signaturePhone}\n🌍 ${state.signatureWebsite}`;
         
@@ -1156,25 +1157,11 @@
                  if(co) co.textContent = origin;
             }
 
-            // Ensures worker doesn't multiply on hot reload
-            if (!window.appWorker) {
-                const workerBlob = new Blob([`
-                    self.onmessage = function(e) {
-                        if (e.data === 'start') {
-                            if(self.timer) clearInterval(self.timer);
-                            self.timer = setInterval(function() {
-                                self.postMessage('tick');
-                            }, 1000);
-                        } else if (e.data === 'stop') {
-                            clearInterval(self.timer);
-                        }
-                    };
-                `], { type: "text/javascript" });
-                
-                window.appWorker = new Worker(window.URL.createObjectURL(workerBlob));
-                window.appWorker.onmessage = function(e) { if (e.data === 'tick') processQueue(); };
-                window.appWorker.postMessage('start');
+            // CLEAN UP WORKERS AND USE INTERVAL
+            if (queueLoopInterval) {
+                clearInterval(queueLoopInterval);
             }
+            queueLoopInterval = setInterval(processQueue, 1000);
 
             switchView('dashboard'); 
             
@@ -1692,8 +1679,8 @@
 
             if(quotaEl) state.dailyQuota = parseInt(quotaEl.value, 10) || 100;
             if(clientEl) state.clientId = clientEl.value;
-            if(minEl) state.minDelay = parseInt(minEl.value, 10) || 10;
-            if(maxEl) state.maxDelay = parseInt(maxEl.value, 10) || 30;
+            if(minEl) state.minDelay = parseInt(minEl.value, 10) || 120;
+            if(maxEl) state.maxDelay = parseInt(maxEl.value, 10) || 180;
             if(sigEmailEl) state.signatureEmail = sigEmailEl.value;
             if(sigPhoneEl) state.signaturePhone = sigPhoneEl.value;
             if(sigWebsiteEl) state.signatureWebsite = sigWebsiteEl.value;
@@ -2317,6 +2304,11 @@
                     const sel = document.getElementById('run-camp-select');
                     state.runningCampaignId = sel ? sel.value : 'all';
                 }
+                
+                // CRITICAL FIX: If we press start, allow it to send immediately if delay has passed
+                if(Date.now() > state.nextSendTime) {
+                    state.nextSendTime = Date.now();
+                }
             }
 
             document.querySelectorAll('.btn-start-camp').forEach(el => el.classList.toggle('hidden', enable));
@@ -2348,8 +2340,6 @@
             const today = new Date().toISOString().split('T')[0];
             return state.sentLog.filter(log => log.date === today && log.status === 'sent').length;
         }
-
-        let isProcessing = false;
 
         async function processQueue() {
             if (!state.isSending || isProcessing || !state.token) return;
@@ -2466,8 +2456,8 @@
                 renderCampaigns(); 
                 
                 // Calculate Dynamic Delay safely
-                const min = parseInt(state.minDelay, 10) || 10;
-                const max = parseInt(state.maxDelay, 10) || 30;
+                const min = parseInt(state.minDelay, 10) || 120; // Defaulting safely if empty
+                const max = parseInt(state.maxDelay, 10) || 180;
                 const actualMin = Math.max(5, Math.min(min, max)); // absolute floor of 5s
                 const actualMax = Math.max(5, Math.max(min, max));
                 
