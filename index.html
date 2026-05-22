@@ -86,7 +86,7 @@
                 <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Daily Quota</h3>
                 <div class="flex items-end justify-between mb-1">
                     <span id="daily-count" class="text-2xl font-bold text-gray-800 dark:text-white">0</span>
-                    <span class="text-sm text-gray-500 dark:text-gray-400 mb-1">/ 100</span>
+                    <span class="text-sm text-gray-500 dark:text-gray-400 mb-1">/ <span id="daily-limit-sidebar">100</span></span>
                 </div>
                 <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                     <div id="daily-bar" class="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
@@ -709,9 +709,35 @@
                             </p>
                         </div>
 
-                        <!-- NEW DELAY SETTINGS -->
+                        <!-- NEW SETTINGS SECTION -->
                         <div class="pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
                             <h4 class="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-4">
+                                <i class="ph ph-envelope-simple"></i> Email Footer & Quota
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Daily Quota</label>
+                                    <input type="number" id="setting-daily-quota" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white" min="1" placeholder="100">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Signature Email</label>
+                                    <input type="text" id="setting-sig-email" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white" placeholder="deepak@mobi-hub.com">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Signature Phone</label>
+                                    <input type="text" id="setting-sig-phone" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white" placeholder="+44 7477 740831">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Signature Website</label>
+                                    <input type="text" id="setting-sig-website" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white" placeholder="https://www.mobi-hub.co.uk/">
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">Unsubscribe Message</label>
+                                <input type="text" id="setting-unsub-msg" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white" placeholder="If this email isn't relevant, please reply 'unsubscribe' to let me know.">
+                            </div>
+                            
+                            <h4 class="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-4 mt-6">
                                 <i class="ph ph-clock"></i> Automated Sending Speed
                             </h4>
                             <div class="flex items-center gap-4">
@@ -815,24 +841,25 @@
             }, 4000);
         }
 
-        // --- CONFIGURATION ---
-        const EMBEDDED_CLIENT_ID = "195749587118-dg3i2gogrq13bns5i2llivlafr21ncav.apps.googleusercontent.com";
-        const SIGNATURE = `\n\n---\n📧 deepak@mobi-hub.com\n📞 +44 7477 740831\n🌍 https://www.mobi-hub.co.uk/`;
-
         // --- STATE MANAGEMENT ---
         const state = {
             token: null,
             userProfile: null,
             isSending: false,
             runningCampaignId: 'all',
-            clientId: EMBEDDED_CLIENT_ID !== "PASTE_YOUR_CLIENT_ID_HERE" ? EMBEDDED_CLIENT_ID : (localStorage.getItem('gsafe_client_id') || ''),
+            clientId: localStorage.getItem('gsafe_client_id') || "195749587118-dg3i2gogrq13bns5i2llivlafr21ncav.apps.googleusercontent.com",
             
-            // Delays
+            // Settings Configuration
+            dailyQuota: parseInt(localStorage.getItem('gsafe_daily_quota'), 10) || 100,
             minDelay: parseInt(localStorage.getItem('gsafe_min_delay'), 10) || 10,
             maxDelay: parseInt(localStorage.getItem('gsafe_max_delay'), 10) || 30,
+            signatureEmail: localStorage.getItem('gsafe_sig_email') || 'deepak@mobi-hub.com',
+            signaturePhone: localStorage.getItem('gsafe_sig_phone') || '+44 7477 740831',
+            signatureWebsite: localStorage.getItem('gsafe_sig_website') || 'https://www.mobi-hub.co.uk/',
+            unsubscribeMsg: localStorage.getItem('gsafe_unsub_msg') || "If this email isn't relevant, please reply 'unsubscribe' to let me know.",
 
             subject: localStorage.getItem('gsafe_subject') || '',
-            body: localStorage.getItem('gsafe_body') || 'Hello {Name},<br><br>I noticed that {Company} is doing great work...<br><br>Best,<br>[Your Name]' + SIGNATURE.replace(/\n/g, '<br>'),
+            body: localStorage.getItem('gsafe_body') || 'Hello {Name},<br><br>I noticed that {Company} is doing great work...<br><br>Best,<br>[Your Name]',
             queue: JSON.parse(localStorage.getItem('gsafe_queue') || '[]'),
             sentLog: JSON.parse(localStorage.getItem('gsafe_sent_log') || '[]'),
             campaigns: JSON.parse(localStorage.getItem('gsafe_campaigns') || '[]'),
@@ -841,28 +868,34 @@
 
         let currentContactId = null;
 
+        const getRawSignature = () => `\n\n---\n📧 ${state.signatureEmail}\n📞 ${state.signaturePhone}\n🌍 ${state.signatureWebsite}`;
+        
+        function getSignatureHtml() {
+            return `<br><br>---<br>📧 ${state.signatureEmail}<br>📞 ${state.signaturePhone}<br>🌍 ${state.signatureWebsite}`;
+        }
+
         // --- DEFAULT TEMPLATES ---
         const DEFAULT_B2B_TEMPLATES = {
-            intro: { name: "Mobi Hub Introduction (General)", subject: "Introduction: Connecting with Buying Team - Mobi Hub", body: `Dear Team,\n\nI hope you’re doing well.\n\nMy name is Deepak, and I represent the sales team at Mobi Hub. We specialize in supplying used iPhones and Samsung devices across Europe and the UAE, supported by warehouses in Germany and the Netherlands.\n\nI’m reaching out to kindly request a connection with your buying/purchasing team to understand your current and upcoming sourcing requirements and explore potential cooperation.\n\nPlease let me know the appropriate contact person, or feel free to forward this email to the relevant team.\n\nThank you for your time and support. I look forward to connecting.\n\nBest regards,\nDeepak\nMobi Hub` + SIGNATURE },
-            sourcing_connect: { name: "Connecting with Sourcing Team", subject: "Connecting with Sourcing Team - Mobi Hub Supply", body: `Hello {Name},\n\nI hope this email finds you well.\n\nI am reaching out to connect specifically with the sourcing and procurement team at {Company}.\n\nMobi Hub specializes in the consistent supply of high-quality used iPhones and Samsungs from our EU distribution centers. We are currently looking to onboard new B2B partners who require reliable stock of ASIS, A-Grade, and CPO devices.\n\nCould you please direct me to the right person to discuss your current inventory needs?\n\nBest regards,\nDeepak\nMobi Hub` + SIGNATURE },
-            client_onboard: { name: "New Client Onboarding", subject: "Welcome to Mobi Hub - Account Setup for {Company}", body: `Hello {Name},\n\nWelcome aboard! We are thrilled to have {Company} as a new partner.\n\nI wanted to formally introduce myself as your dedicated account manager at Mobi Hub. My goal is to ensure you have seamless access to our weekly stock of used iPhones and Samsungs from our German and Dutch warehouses.\n\nPlease let me know if you have any specific grading requirements or model preferences so I can tailor our offers for you.\n\nLooking forward to a successful partnership.\n\nBest regards,\nDeepak\nMobi Hub` + SIGNATURE },
-            welcome: { name: "Welcome Email", subject: "Welcome to the Mobi Hub Network", body: `Hello {Name},\n\nThank you for your interest in Mobi Hub. It is great to connect with you.\n\nWe are a leading supplier of used mobile devices across the EU and UAE. We take pride in our strict grading standards and reliable logistics.\n\nI will keep you updated with our latest stock lists and special offers. If you have an immediate requirement for iPhones or Samsungs, please reply to this email, and I will check our inventory for you right away.\n\nBest regards,\nDeepak\nMobi Hub` + SIGNATURE },
-            stock: { name: "Weekly Stock Update", subject: "Stock Update: Fresh iPhones available in Germany", body: `Hello {Name},\n\nThis is Deepak from Mobi Hub again.\n\nI wanted to give you a quick update on our latest stock landing in our Germany warehouse. We have a fresh batch of iPhones (ASIS+ and CPO grades) ready for immediate shipment.\n\nAre you looking for any specific models this week? If you send over your requirements or target prices, I can check our inventory for {Company} specifically.\n\nLooking forward to supporting your supply chain.\n\nBest,\nDeepak\nMobi Hub` + SIGNATURE },
-            buying_list: { name: "Requesting Buying List", subject: "Partnership Inquiry: Sourcing Requirements", body: `Hello {Name},\n\nWe are expanding our distribution for the upcoming month at Mobi Hub. Since we handle large volumes of used iPhones and Samsungs in the EU, I want to make sure we are stocking what you actually need.\n\nCould you share your current buying list or the models you are most short on?\n\nI’m confident we can offer competitive pricing for {Company}'s regular volume.\n\nBest regards,\nDeepak\nMobi Hub` + SIGNATURE },
-            followup_1: { name: "Follow Up: Quick Bump", subject: "Just checking in - Stock requirements", body: `Hello {Name},\n\nBubbling this to the top of your inbox.\n\nDid you have a chance to review my previous email regarding our stock of iPhones/Samsungs in Germany?\n\nI'd love to add {Company} to our distribution list for next week's offers if you are interested.\n\nBest,\nDeepak\nMobi Hub` + SIGNATURE },
-            meeting_request: { name: "Meeting Request: Supply Discussion", subject: "Quick chat: Supply Discussion", body: `Hello {Name},\n\nAre you available for a brief 5-minute call this week?\n\nI'd like to understand {Company}'s grading requirements better so I can send you only relevant offers from our EU/UAE warehouses.\n\nLet me know what works for you.\n\nBest,\nDeepak\nMobi Hub` + SIGNATURE },
-            quality_focus: { name: "Variation 1: Quality Assurance Focus", subject: "Premium Grade Stock Availability", body: `Hello {Name},\n\nHope you are doing well.\n\nAt Mobi Hub, we prioritize consistency. I know how frustrating "grading slippage" can be when buying used devices.\n\nWe just received a new shipment of strictly graded iPhones (A/A+ and CPO) at our Germany warehouse. Every device undergoes a 30-point check to ensure your customers get exactly what they pay for.\n\nWould you be open to testing a small sample order to verify our quality?\n\nBest,\nDeepak\nMobi Hub` + SIGNATURE },
-            price_match: { name: "Variation 2: Competitive Pricing", subject: "Margin Opportunities on Apple Stock", body: `Hello {Name},\n\nHope you are doing well.\n\nI'm reviewing our pricing for the upcoming week and noticed we have some excellent margin opportunities on iPhone 12 and 13 series (ASIS+ and CPO).\n\nSince we supply directly from our EU warehouses, we can offer rates that might beat your current suppliers.\n\nIf you share your target buy prices for {Company}, I’ll do my best to match or beat them.\n\nBest,\nDeepak\nMobi Hub` + SIGNATURE },
-            reliable_partner: { name: "Variation 3: Reliable Supply Chain", subject: "Reliable EU Supply Partner Proposal", body: `Hello {Name},\n\nHope you are doing well.\n\nSupply chain stability is key in our business. I’m writing to introduce Mobi Hub as a reliable partner for your used iPhone and Samsung needs.\n\nWith warehouses in Germany and the Netherlands, we offer fast, duty-free shipping within the EU. We have consistent weekly stock of ASIS, A-Grade, and CPO devices.\n\nCan we hop on a quick call to discuss how we can support {Company}'s growth this quarter?\n\nBest,\nDeepak\nMobi Hub` + SIGNATURE }
+            intro: { name: "Mobi Hub Introduction (General)", subject: "Introduction: Connecting with Buying Team - Mobi Hub", body: `Dear Team,\n\nI hope you’re doing well.\n\nMy name is Deepak, and I represent the sales team at Mobi Hub. We specialize in supplying used iPhones and Samsung devices across Europe and the UAE, supported by warehouses in Germany and the Netherlands.\n\nI’m reaching out to kindly request a connection with your buying/purchasing team to understand your current and upcoming sourcing requirements and explore potential cooperation.\n\nPlease let me know the appropriate contact person, or feel free to forward this email to the relevant team.\n\nThank you for your time and support. I look forward to connecting.\n\nBest regards,\nDeepak\nMobi Hub` + getRawSignature() },
+            sourcing_connect: { name: "Connecting with Sourcing Team", subject: "Connecting with Sourcing Team - Mobi Hub Supply", body: `Hello {Name},\n\nI hope this email finds you well.\n\nI am reaching out to connect specifically with the sourcing and procurement team at {Company}.\n\nMobi Hub specializes in the consistent supply of high-quality used iPhones and Samsungs from our EU distribution centers. We are currently looking to onboard new B2B partners who require reliable stock of ASIS, A-Grade, and CPO devices.\n\nCould you please direct me to the right person to discuss your current inventory needs?\n\nBest regards,\nDeepak\nMobi Hub` + getRawSignature() },
+            client_onboard: { name: "New Client Onboarding", subject: "Welcome to Mobi Hub - Account Setup for {Company}", body: `Hello {Name},\n\nWelcome aboard! We are thrilled to have {Company} as a new partner.\n\nI wanted to formally introduce myself as your dedicated account manager at Mobi Hub. My goal is to ensure you have seamless access to our weekly stock of used iPhones and Samsungs from our German and Dutch warehouses.\n\nPlease let me know if you have any specific grading requirements or model preferences so I can tailor our offers for you.\n\nLooking forward to a successful partnership.\n\nBest regards,\nDeepak\nMobi Hub` + getRawSignature() },
+            welcome: { name: "Welcome Email", subject: "Welcome to the Mobi Hub Network", body: `Hello {Name},\n\nThank you for your interest in Mobi Hub. It is great to connect with you.\n\nWe are a leading supplier of used mobile devices across the EU and UAE. We take pride in our strict grading standards and reliable logistics.\n\nI will keep you updated with our latest stock lists and special offers. If you have an immediate requirement for iPhones or Samsungs, please reply to this email, and I will check our inventory for you right away.\n\nBest regards,\nDeepak\nMobi Hub` + getRawSignature() },
+            stock: { name: "Weekly Stock Update", subject: "Stock Update: Fresh iPhones available in Germany", body: `Hello {Name},\n\nThis is Deepak from Mobi Hub again.\n\nI wanted to give you a quick update on our latest stock landing in our Germany warehouse. We have a fresh batch of iPhones (ASIS+ and CPO grades) ready for immediate shipment.\n\nAre you looking for any specific models this week? If you send over your requirements or target prices, I can check our inventory for {Company} specifically.\n\nLooking forward to supporting your supply chain.\n\nBest,\nDeepak\nMobi Hub` + getRawSignature() },
+            buying_list: { name: "Requesting Buying List", subject: "Partnership Inquiry: Sourcing Requirements", body: `Hello {Name},\n\nWe are expanding our distribution for the upcoming month at Mobi Hub. Since we handle large volumes of used iPhones and Samsungs in the EU, I want to make sure we are stocking what you actually need.\n\nCould you share your current buying list or the models you are most short on?\n\nI’m confident we can offer competitive pricing for {Company}'s regular volume.\n\nBest regards,\nDeepak\nMobi Hub` + getRawSignature() },
+            followup_1: { name: "Follow Up: Quick Bump", subject: "Just checking in - Stock requirements", body: `Hello {Name},\n\nBubbling this to the top of your inbox.\n\nDid you have a chance to review my previous email regarding our stock of iPhones/Samsungs in Germany?\n\nI'd love to add {Company} to our distribution list for next week's offers if you are interested.\n\nBest,\nDeepak\nMobi Hub` + getRawSignature() },
+            meeting_request: { name: "Meeting Request: Supply Discussion", subject: "Quick chat: Supply Discussion", body: `Hello {Name},\n\nAre you available for a brief 5-minute call this week?\n\nI'd like to understand {Company}'s grading requirements better so I can send you only relevant offers from our EU/UAE warehouses.\n\nLet me know what works for you.\n\nBest,\nDeepak\nMobi Hub` + getRawSignature() },
+            quality_focus: { name: "Variation 1: Quality Assurance Focus", subject: "Premium Grade Stock Availability", body: `Hello {Name},\n\nHope you are doing well.\n\nAt Mobi Hub, we prioritize consistency. I know how frustrating "grading slippage" can be when buying used devices.\n\nWe just received a new shipment of strictly graded iPhones (A/A+ and CPO) at our Germany warehouse. Every device undergoes a 30-point check to ensure your customers get exactly what they pay for.\n\nWould you be open to testing a small sample order to verify our quality?\n\nBest,\nDeepak\nMobi Hub` + getRawSignature() },
+            price_match: { name: "Variation 2: Competitive Pricing", subject: "Margin Opportunities on Apple Stock", body: `Hello {Name},\n\nHope you are doing well.\n\nI'm reviewing our pricing for the upcoming week and noticed we have some excellent margin opportunities on iPhone 12 and 13 series (ASIS+ and CPO).\n\nSince we supply directly from our EU warehouses, we can offer rates that might beat your current suppliers.\n\nIf you share your target buy prices for {Company}, I’ll do my best to match or beat them.\n\nBest,\nDeepak\nMobi Hub` + getRawSignature() },
+            reliable_partner: { name: "Variation 3: Reliable Supply Chain", subject: "Reliable EU Supply Partner Proposal", body: `Hello {Name},\n\nHope you are doing well.\n\nSupply chain stability is key in our business. I’m writing to introduce Mobi Hub as a reliable partner for your used iPhone and Samsung needs.\n\nWith warehouses in Germany and the Netherlands, we offer fast, duty-free shipping within the EU. We have consistent weekly stock of ASIS, A-Grade, and CPO devices.\n\nCan we hop on a quick call to discuss how we can support {Company}'s growth this quarter?\n\nBest,\nDeepak\nMobi Hub` + getRawSignature() }
         };
 
         const DEFAULT_EVENT_TEMPLATES = {
-            event_invite: { name: "Exhibition Invitation", subject: "Meet Mobi Hub at Upcoming Exhibition", body: `Hello {Name},\n\nWe are excited to announce that Mobi Hub will be exhibiting at the upcoming trade show.\n\nWe would love to invite you to our booth to discuss how we can support {Company} with our premium used iPhone and Samsung stock.\n\nPlease let us know if you'll be attending so we can schedule a meeting.\n\nBest regards,\nDeepak\nMobi Hub` + SIGNATURE },
-            event_followup: { name: "Post-Event Follow-up", subject: "Great connecting at the event - Mobi Hub", body: `Hello {Name},\n\nIt was great meeting you at the event.\n\nFollowing up on our conversation, I'm sharing our latest stock list of iPhones and Samsung devices from our EU warehouses.\n\nLet me know if {Company} has any immediate requirements we can fulfill.\n\nBest regards,\nDeepak\nMobi Hub` + SIGNATURE },
-            networking_dinner: { name: "Networking Dinner Invite", subject: "Exclusive Networking Dinner Invite - Mobi Hub", body: `Hello {Name},\n\nDuring the upcoming exhibition, Mobi Hub is hosting an exclusive networking dinner for our trusted partners.\n\nWe would be honored if you could join us for an evening of great food and industry insights.\n\nPlease let me know your availability.\n\nBest regards,\nDeepak\nMobi Hub` + SIGNATURE },
-            circular_tech_awards: { name: "Circular Tech Awards 2026", subject: "Explore participation at Circular Tech Awards 2026 - Berlin", body: `Hello {Name},\n\nHope you’re doing well.\n\nI came across {Company} and thought your work aligns strongly with the circular technology and sustainability ecosystem we are bringing together at Circular Tech Awards 2026 in Berlin on 5 September.\n\nThe event brings together companies from:\n- refurbished electronics\n- circular economy\n- recycling & ESG\n- reverse logistics\n- telecom trade-in\n- sustainable technology\n\nWe are currently inviting selected companies for:\n- award nominations\n- exhibitor participation\n- networking opportunities\n- partnership discussions\n\nGiven your company’s presence in the industry, I believe there could be a strong fit.\n\nWould you be open to a quick conversation to explore potential participation?\n\nBest regards,\nDeepak\nMobi Hub Events` + SIGNATURE },
-            gitex_europe: { name: "GITEX Europe 2026", subject: "GITEX Europe 2026 - Exhibitor & Partnership Opportunities", body: `Hello {Name},\n\nI’m reaching out from Mobi Hub Events regarding GITEX Europe 2026 taking place in Berlin on June 30 / July 1.\n\nWe are currently connecting with innovative companies in the circular tech, refurbished electronics, and sustainability sectors that may be interested in:\n- exhibitor booths\n- sponsorship visibility\n- networking access\n- business partnerships\n- European market exposure\n\nConsidering {Company}’s industry positioning, I felt it would be valuable to connect.\n\nMany participating companies are using the event to expand partnerships, strengthen visibility, and meet buyers and distributors across Europe.\n\nHappy to share further details if of interest.\n\nBest regards,\nDeepak\nMobi Hub Events` + SIGNATURE },
-            berlin_events_partnership: { name: "Berlin Events Partnership", subject: "Partnership Opportunities: Berlin Tech & Circular Economy Events", body: `Hello {Name},\n\nHope all is well.\n\nWe are currently building partnerships and exhibitor participation for upcoming tech and circular economy events in Berlin, including Circular Tech Awards 2026 and GITEX Europe.\n\nYour company stood out due to its involvement in the sustainability / circular technology space, and I thought it would make sense to connect.\n\nSome companies are joining through:\n- nominations\n- exhibitor booths\n- sponsorship packages\n- attendee delegations\n- networking participation\n\nThe focus is on creating meaningful business connections across the refurbished electronics and circular economy ecosystem.\n\nLet me know if you would be interested in exploring participation opportunities.\n\nKind regards,\nDeepak\nMobi Hub Events` + SIGNATURE }
+            event_invite: { name: "Exhibition Invitation", subject: "Meet Mobi Hub at Upcoming Exhibition", body: `Hello {Name},\n\nWe are excited to announce that Mobi Hub will be exhibiting at the upcoming trade show.\n\nWe would love to invite you to our booth to discuss how we can support {Company} with our premium used iPhone and Samsung stock.\n\nPlease let us know if you'll be attending so we can schedule a meeting.\n\nBest regards,\nDeepak\nMobi Hub` + getRawSignature() },
+            event_followup: { name: "Post-Event Follow-up", subject: "Great connecting at the event - Mobi Hub", body: `Hello {Name},\n\nIt was great meeting you at the event.\n\nFollowing up on our conversation, I'm sharing our latest stock list of iPhones and Samsung devices from our EU warehouses.\n\nLet me know if {Company} has any immediate requirements we can fulfill.\n\nBest regards,\nDeepak\nMobi Hub` + getRawSignature() },
+            networking_dinner: { name: "Networking Dinner Invite", subject: "Exclusive Networking Dinner Invite - Mobi Hub", body: `Hello {Name},\n\nDuring the upcoming exhibition, Mobi Hub is hosting an exclusive networking dinner for our trusted partners.\n\nWe would be honored if you could join us for an evening of great food and industry insights.\n\nPlease let me know your availability.\n\nBest regards,\nDeepak\nMobi Hub` + getRawSignature() },
+            circular_tech_awards: { name: "Circular Tech Awards 2026", subject: "Explore participation at Circular Tech Awards 2026 - Berlin", body: `Hello {Name},\n\nHope you’re doing well.\n\nI came across {Company} and thought your work aligns strongly with the circular technology and sustainability ecosystem we are bringing together at Circular Tech Awards 2026 in Berlin on 5 September.\n\nThe event brings together companies from:\n- refurbished electronics\n- circular economy\n- recycling & ESG\n- reverse logistics\n- telecom trade-in\n- sustainable technology\n\nWe are currently inviting selected companies for:\n- award nominations\n- exhibitor participation\n- networking opportunities\n- partnership discussions\n\nGiven your company’s presence in the industry, I believe there could be a strong fit.\n\nWould you be open to a quick conversation to explore potential participation?\n\nBest regards,\nDeepak\nMobi Hub Events` + getRawSignature() },
+            gitex_europe: { name: "GITEX Europe 2026", subject: "GITEX Europe 2026 - Exhibitor & Partnership Opportunities", body: `Hello {Name},\n\nI’m reaching out from Mobi Hub Events regarding GITEX Europe 2026 taking place in Berlin on June 30 / July 1.\n\nWe are currently connecting with innovative companies in the circular tech, refurbished electronics, and sustainability sectors that may be interested in:\n- exhibitor booths\n- sponsorship visibility\n- networking access\n- business partnerships\n- European market exposure\n\nConsidering {Company}’s industry positioning, I felt it would be valuable to connect.\n\nMany participating companies are using the event to expand partnerships, strengthen visibility, and meet buyers and distributors across Europe.\n\nHappy to share further details if of interest.\n\nBest regards,\nDeepak\nMobi Hub Events` + getRawSignature() },
+            berlin_events_partnership: { name: "Berlin Events Partnership", subject: "Partnership Opportunities: Berlin Tech & Circular Economy Events", body: `Hello {Name},\n\nHope all is well.\n\nWe are currently building partnerships and exhibitor participation for upcoming tech and circular economy events in Berlin, including Circular Tech Awards 2026 and GITEX Europe.\n\nYour company stood out due to its involvement in the sustainability / circular technology space, and I thought it would make sense to connect.\n\nSome companies are joining through:\n- nominations\n- exhibitor booths\n- sponsorship packages\n- attendee delegations\n- networking participation\n\nThe focus is on creating meaningful business connections across the refurbished electronics and circular economy ecosystem.\n\nLet me know if you would be interested in exploring participation opportunities.\n\nKind regards,\nDeepak\nMobi Hub Events` + getRawSignature() }
         };
 
         let activeTemplateTab = 'b2b';
@@ -996,15 +1029,19 @@
         function updateDashboard() {
             const count = getSentTodayCount();
             const stats = getStats();
+            const limit = state.dailyQuota;
             
             const dailyCountEl = document.getElementById('daily-count');
             if(dailyCountEl) dailyCountEl.textContent = count;
+
+            const limitDisplayEl = document.getElementById('daily-limit-sidebar');
+            if(limitDisplayEl) limitDisplayEl.textContent = limit;
             
-            const percent = Math.min((count / 100) * 100, 100);
+            const percent = Math.min((count / limit) * 100, 100);
             const bar = document.getElementById('daily-bar');
             if(bar) {
                 bar.style.width = `${percent}%`;
-                bar.className = `h-1.5 rounded-full transition-all duration-500 ${count >= 100 ? 'bg-red-500' : 'bg-blue-500'}`;
+                bar.className = `h-1.5 rounded-full transition-all duration-500 ${count >= limit ? 'bg-red-500' : 'bg-blue-500'}`;
             }
 
             const dashSent = document.getElementById('dash-sent');
@@ -1072,6 +1109,21 @@
             const maxDelayEl = document.getElementById('setting-max-delay');
             if(maxDelayEl) maxDelayEl.value = state.maxDelay;
 
+            const quotaEl = document.getElementById('setting-daily-quota');
+            if(quotaEl) quotaEl.value = state.dailyQuota;
+
+            const sigEmailEl = document.getElementById('setting-sig-email');
+            if(sigEmailEl) sigEmailEl.value = state.signatureEmail;
+
+            const sigPhoneEl = document.getElementById('setting-sig-phone');
+            if(sigPhoneEl) sigPhoneEl.value = state.signaturePhone;
+
+            const sigWebsiteEl = document.getElementById('setting-sig-website');
+            if(sigWebsiteEl) sigWebsiteEl.value = state.signatureWebsite;
+
+            const unsubMsgEl = document.getElementById('setting-unsub-msg');
+            if(unsubMsgEl) unsubMsgEl.value = state.unsubscribeMsg;
+
             const emailSubjectEl = document.getElementById('email-subject');
             if(emailSubjectEl) emailSubjectEl.value = state.subject;
             
@@ -1122,18 +1174,6 @@
                 clientIdEl.addEventListener('input', (e) => {
                     state.clientId = e.target.value;
                     localStorage.setItem('gsafe_client_id', state.clientId);
-                });
-            }
-            if(minDelayEl) {
-                minDelayEl.addEventListener('input', (e) => {
-                    state.minDelay = parseInt(e.target.value, 10) || 10;
-                    localStorage.setItem('gsafe_min_delay', state.minDelay);
-                });
-            }
-            if(maxDelayEl) {
-                maxDelayEl.addEventListener('input', (e) => {
-                    state.maxDelay = parseInt(e.target.value, 10) || 30;
-                    localStorage.setItem('gsafe_max_delay', state.maxDelay);
                 });
             }
             if(emailSubjectEl) {
@@ -1618,18 +1658,34 @@
         }
 
         function saveSettings() {
+            const quotaEl = document.getElementById('setting-daily-quota');
             const minEl = document.getElementById('setting-min-delay');
             const maxEl = document.getElementById('setting-max-delay');
             const clientEl = document.getElementById('client-id-input');
+            const sigEmailEl = document.getElementById('setting-sig-email');
+            const sigPhoneEl = document.getElementById('setting-sig-phone');
+            const sigWebsiteEl = document.getElementById('setting-sig-website');
+            const unsubMsgEl = document.getElementById('setting-unsub-msg');
 
+            if(quotaEl) state.dailyQuota = parseInt(quotaEl.value, 10) || 100;
             if(clientEl) state.clientId = clientEl.value;
             if(minEl) state.minDelay = parseInt(minEl.value, 10) || 10;
             if(maxEl) state.maxDelay = parseInt(maxEl.value, 10) || 30;
+            if(sigEmailEl) state.signatureEmail = sigEmailEl.value;
+            if(sigPhoneEl) state.signaturePhone = sigPhoneEl.value;
+            if(sigWebsiteEl) state.signatureWebsite = sigWebsiteEl.value;
+            if(unsubMsgEl) state.unsubscribeMsg = unsubMsgEl.value;
             
+            localStorage.setItem('gsafe_daily_quota', state.dailyQuota);
             localStorage.setItem('gsafe_client_id', state.clientId);
             localStorage.setItem('gsafe_min_delay', state.minDelay);
             localStorage.setItem('gsafe_max_delay', state.maxDelay);
+            localStorage.setItem('gsafe_sig_email', state.signatureEmail);
+            localStorage.setItem('gsafe_sig_phone', state.signaturePhone);
+            localStorage.setItem('gsafe_sig_website', state.signatureWebsite);
+            localStorage.setItem('gsafe_unsub_msg', state.unsubscribeMsg);
             
+            updateDashboard(); // visually update quota limits
             showToast('Settings Saved', 'success');
         }
 
@@ -1645,8 +1701,13 @@
                 custom_events: localStorage.getItem('gsafe_custom_events'),
                 campaigns: localStorage.getItem('gsafe_campaigns'),
                 theme: localStorage.getItem('gsafe_theme'),
+                daily_quota: localStorage.getItem('gsafe_daily_quota'),
                 min_delay: localStorage.getItem('gsafe_min_delay'),
-                max_delay: localStorage.getItem('gsafe_max_delay')
+                max_delay: localStorage.getItem('gsafe_max_delay'),
+                sig_email: localStorage.getItem('gsafe_sig_email'),
+                sig_phone: localStorage.getItem('gsafe_sig_phone'),
+                sig_website: localStorage.getItem('gsafe_sig_website'),
+                unsub_msg: localStorage.getItem('gsafe_unsub_msg')
             };
 
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup));
@@ -1675,8 +1736,13 @@
                     if (backup.custom_events) localStorage.setItem('gsafe_custom_events', backup.custom_events);
                     if (backup.campaigns) localStorage.setItem('gsafe_campaigns', backup.campaigns);
                     if (backup.theme) localStorage.setItem('gsafe_theme', backup.theme);
+                    if (backup.daily_quota) localStorage.setItem('gsafe_daily_quota', backup.daily_quota);
                     if (backup.min_delay) localStorage.setItem('gsafe_min_delay', backup.min_delay);
                     if (backup.max_delay) localStorage.setItem('gsafe_max_delay', backup.max_delay);
+                    if (backup.sig_email) localStorage.setItem('gsafe_sig_email', backup.sig_email);
+                    if (backup.sig_phone) localStorage.setItem('gsafe_sig_phone', backup.sig_phone);
+                    if (backup.sig_website) localStorage.setItem('gsafe_sig_website', backup.sig_website);
+                    if (backup.unsub_msg) localStorage.setItem('gsafe_unsub_msg', backup.unsub_msg);
                     alert("Data restored successfully! The page will now reload.");
                     window.location.reload();
                 } catch (err) {
@@ -2035,8 +2101,12 @@
                     .replace(/{{company}}/gi, contact.company || '')       
                     .replace(/{company}/gi, contact.company || '');        
 
-                if (!processedBody.includes("deepak@mobi-hub.com")) processedBody += SIGNATURE.replace(/\n/g, '<br>');
-                if (!processedBody.includes("reply 'unsubscribe'")) processedBody += `<br><br>If this email isn't relevant, please reply 'unsubscribe' to let me know.`;
+                if (state.signatureEmail && !processedBody.includes(state.signatureEmail)) {
+                    processedBody += getSignatureHtml();
+                }
+                if (state.unsubscribeMsg && !processedBody.includes(state.unsubscribeMsg) && !processedBody.includes("unsubscribe")) {
+                    processedBody += `<br><br>${state.unsubscribeMsg}`;
+                }
 
                 const emailContent = [
                     `To: ${contact.email}`,
@@ -2107,8 +2177,12 @@
                 if(!confirm("Warning: Your email body still contains {Name} or {Company} placeholders. Send anyway?")) return;
             }
 
-            if (!processedBody.includes("deepak@mobi-hub.com")) processedBody += SIGNATURE.replace(/\n/g, '<br>');
-            if (!processedBody.includes("reply 'unsubscribe'")) processedBody += `<br><br>If this email isn't relevant, please reply 'unsubscribe' to let me know.`;
+            if (state.signatureEmail && !processedBody.includes(state.signatureEmail)) {
+                processedBody += getSignatureHtml();
+            }
+            if (state.unsubscribeMsg && !processedBody.includes(state.unsubscribeMsg) && !processedBody.includes("unsubscribe")) {
+                processedBody += `<br><br>${state.unsubscribeMsg}`;
+            }
 
             btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Sending...`;
             btn.disabled = true;
@@ -2272,9 +2346,9 @@
                 return;
             }
 
-            if (getSentTodayCount() >= 100) {
+            if (getSentTodayCount() >= state.dailyQuota) {
                 toggleSending(false);
-                updateStatus("Daily limit (100) reached.");
+                updateStatus(`Daily limit (${state.dailyQuota}) reached.`);
                 return;
             }
 
@@ -2307,8 +2381,12 @@
                     .replace(/{{company}}/gi, pending.company || '')       
                     .replace(/{company}/gi, pending.company || '');        
                 
-                if (!processedBody.includes("deepak@mobi-hub.com")) processedBody += SIGNATURE.replace(/\n/g, '<br>');
-                if (!processedBody.includes("reply 'unsubscribe'")) processedBody += `<br><br>If this email isnt relevant, please reply 'unsubscribe' to let me know.`;
+                if (state.signatureEmail && !processedBody.includes(state.signatureEmail)) {
+                    processedBody += getSignatureHtml();
+                }
+                if (state.unsubscribeMsg && !processedBody.includes(state.unsubscribeMsg) && !processedBody.includes("unsubscribe")) {
+                    processedBody += `<br><br>${state.unsubscribeMsg}`;
+                }
 
                 const emailContent = [
                     `To: ${pending.email}`,
@@ -2373,195 +2451,15 @@
                 
                 // Manually refresh dashboard count without overwriting status
                 const count = getSentTodayCount();
+                const limit = state.dailyQuota;
                 const dailyCountEl = document.getElementById('daily-count');
                 if(dailyCountEl) dailyCountEl.textContent = count;
-                const percent = Math.min((count / 100) * 100, 100);
+                const percent = Math.min((count / limit) * 100, 100);
                 const bar = document.getElementById('daily-bar');
                 if(bar) {
                     bar.style.width = `${percent}%`;
-                    bar.className = `h-1.5 rounded-full transition-all duration-500 ${count >= 100 ? 'bg-red-500' : 'bg-blue-500'}`;
+                    bar.className = `h-1.5 rounded-full transition-all duration-500 ${count >= limit ? 'bg-red-500' : 'bg-blue-500'}`;
                 }
-            }
-        }
-
-        // --- DASHBOARD RENDERING ---
-        function getStats() {
-            const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            
-            const day = now.getDay() || 7; 
-            if(day !== 1) now.setHours(-24 * (day - 1));
-            const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (day-1)); 
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-            let daily = 0; let weekly = 0; let monthly = 0;
-            const monthlyHistory = {};
-
-            state.sentLog.forEach(log => {
-                if (!log.timestamp) return;
-                const d = new Date(log.timestamp);
-                
-                if (d >= startOfDay) daily++;
-                if (d >= startOfWeek) weekly++;
-                if (d >= startOfMonth) monthly++;
-
-                const monthKey = d.toLocaleString('default', { month: 'short', year: 'numeric' });
-                if (!monthlyHistory[monthKey]) monthlyHistory[monthKey] = 0;
-                monthlyHistory[monthKey]++;
-            });
-
-            return { daily, weekly, monthly, monthlyHistory };
-        }
-
-        function updateDashboard() {
-            const count = getSentTodayCount();
-            const stats = getStats();
-            
-            const dailyCountEl = document.getElementById('daily-count');
-            if(dailyCountEl) dailyCountEl.textContent = count;
-            
-            const percent = Math.min((count / 100) * 100, 100);
-            const bar = document.getElementById('daily-bar');
-            if(bar) {
-                bar.style.width = `${percent}%`;
-                bar.className = `h-1.5 rounded-full transition-all duration-500 ${count >= 100 ? 'bg-red-500' : 'bg-blue-500'}`;
-            }
-
-            const dashSent = document.getElementById('dash-sent');
-            if(dashSent) dashSent.textContent = stats.daily; 
-
-            const dashWeekly = document.getElementById('dash-weekly');
-            if(dashWeekly) dashWeekly.textContent = stats.weekly;
-
-            const dashMonthly = document.getElementById('dash-monthly');
-            if(dashMonthly) dashMonthly.textContent = stats.monthly;
-
-            const dashQueue = document.getElementById('dash-queue');
-            if(dashQueue) dashQueue.textContent = state.queue.filter(q => q.status === 'pending').length;
-
-            const dashReplies = document.getElementById('dash-replies');
-            if(dashReplies) dashReplies.textContent = state.sentLog.filter(l => l.status === 'replied').length;
-
-            const dashStatus = document.getElementById('dash-status');
-            if(dashStatus) {
-                if(state.isSending) {
-                    let campName = "All Pending";
-                    if(state.runningCampaignId && state.runningCampaignId !== 'all') {
-                         campName = getCampaignName(state.runningCampaignId);
-                    }
-                    dashStatus.innerHTML = `<span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span> Running`;
-                    dashStatus.className = "text-lg font-bold text-green-600 flex items-center gap-2 md:justify-end";
-                } else {
-                    dashStatus.innerHTML = `<span class="w-3 h-3 rounded-full bg-gray-400"></span> Paused`;
-                    dashStatus.className = "text-lg font-bold text-gray-500 flex items-center gap-2 md:justify-end";
-                }
-            }
-            
-            const dashTbody = document.getElementById('dash-history-body');
-            if (dashTbody) {
-                dashTbody.innerHTML = '';
-                if (Object.keys(stats.monthlyHistory).length === 0) {
-                    dashTbody.innerHTML = `<tr><td colspan="2" class="px-6 py-4 text-center text-gray-500 text-xs">No activity yet.</td></tr>`;
-                } else {
-                    for (const [month, count] of Object.entries(stats.monthlyHistory)) {
-                        dashTbody.innerHTML += `
-                            <tr class="border-b dark:border-gray-700">
-                                <td class="px-6 py-3 text-gray-800 dark:text-gray-200 text-sm">${month}</td>
-                                <td class="px-6 py-3 text-right text-gray-600 dark:text-gray-400 font-mono text-sm">${count}</td>
-                            </tr>
-                        `;
-                    }
-                }
-            }
-        }
-
-        function renderQueue() {
-            const tbody = document.getElementById('queue-table-body');
-            if(!tbody) return;
-            if (state.queue.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-400 dark:text-gray-500">Queue is empty</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = state.queue.map((item, index) => `
-                <tr class="hover:bg-gray-50 border-b border-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
-                    <td class="px-6 py-3 text-gray-500 dark:text-gray-400 text-xs font-mono">${index + 1}</td>
-                    <td class="px-6 py-3"><span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-[10px] uppercase font-bold text-gray-600 dark:text-gray-300 truncate max-w-[100px] inline-block" title="${getCampaignName(item.campaignId)}">${getCampaignName(item.campaignId)}</span></td>
-                    <td class="px-6 py-3 text-gray-800 dark:text-gray-200 font-medium">${item.company || '-'}</td>
-                    <td class="px-6 py-3 text-gray-600 dark:text-gray-400">${item.first_name || '-'}</td>
-                    <td class="px-6 py-3 text-gray-600 dark:text-gray-400">${item.email}</td>
-                    <td class="px-6 py-3">
-                        ${item.status === 'pending' 
-                            ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200">Pending</span>'
-                            : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Failed</span>'
-                        }
-                    </td>
-                    <td class="px-6 py-3 text-right whitespace-nowrap">
-                        <button onclick="openContactActionModal('${item.id}')" class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 mr-3" title="Quick Send / History">
-                            <i class="ph-bold ph-paper-plane-tilt"></i>
-                        </button>
-                        ${item.status === 'pending' ? `
-                        <button onclick="openEditModal('${item.id}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mr-3" title="Edit">
-                            <i class="ph-bold ph-pencil-simple"></i>
-                        </button>
-                        <button onclick="deleteItem('${item.id}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" title="Remove">
-                            <i class="ph-bold ph-trash"></i>
-                        </button>
-                        ` : ''}
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function getOrdinal(n) {
-            const s = ["th", "st", "nd", "rd"];
-            const v = n % 100;
-            return n + (s[(v - 20) % 10] || s[v] || s[0]);
-        }
-
-        function formatLogDate(isoStr) {
-            if (!isoStr) return '-';
-            const date = new Date(isoStr);
-            const day = getOrdinal(date.getDate());
-            const month = date.toLocaleString('en-US', { month: 'short' });
-            const year = date.getFullYear();
-            const time = date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            return `${day} ${month} ${year}, ${time}`;
-        }
-
-        function renderSentLog() {
-            const tbody = document.getElementById('sent-table-body');
-            if(!tbody) return;
-            if (state.sentLog.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400 dark:text-gray-500">No emails sent yet</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = state.sentLog.map((log, index) => `
-                <tr class="hover:bg-gray-50 border-b dark:border-gray-700 dark:hover:bg-gray-700 ${log.status === 'replied' ? 'bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-800' : 'border-gray-100'}">
-                    <td class="px-6 py-3 text-gray-500 dark:text-gray-400 text-xs font-mono">${state.sentLog.length - index}</td>
-                    <td class="px-6 py-3 text-gray-600 dark:text-gray-400 text-xs font-mono">${formatLogDate(log.timestamp)}</td>
-                    <td class="px-6 py-3"><span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-[10px] uppercase font-bold text-gray-600 dark:text-gray-300 truncate max-w-[100px] inline-block" title="${getCampaignName(log.campaignId)}">${getCampaignName(log.campaignId)}</span></td>
-                    <td class="px-6 py-3 text-gray-800 dark:text-gray-200">${log.email}</td>
-                    <td class="px-6 py-3">
-                        ${log.status === 'sent' 
-                           ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300">Sent</span>' 
-                           : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"><i class="ph-bold ph-arrow-u-left-up mr-1"></i> Replied</span>'
-                        }
-                    </td>
-                    <td class="px-6 py-3 text-right">
-                        <button onclick="deleteSentLog('${log.id}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" title="Delete Log">
-                            <i class="ph-bold ph-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function deleteSentLog(id) {
-             if (confirm('Delete this sent log?')) {
-                state.sentLog = state.sentLog.filter(item => String(item.id) !== String(id));
-                localStorage.setItem('gsafe_sent_log', JSON.stringify(state.sentLog));
-                renderSentLog(); 
-                updateDashboard();
             }
         }
     </script>
