@@ -851,8 +851,11 @@
             
             // Settings Configuration
             dailyQuota: parseInt(localStorage.getItem('gsafe_daily_quota'), 10) || 100,
-            minDelay: parseInt(localStorage.getItem('gsafe_min_delay'), 10) || 10,
-            maxDelay: parseInt(localStorage.getItem('gsafe_max_delay'), 10) || 30,
+            
+            // Safe fallback delay variables initialized from Local Storage directly.
+            minDelay: localStorage.getItem('gsafe_min_delay') ? parseInt(localStorage.getItem('gsafe_min_delay'), 10) : 120,
+            maxDelay: localStorage.getItem('gsafe_max_delay') ? parseInt(localStorage.getItem('gsafe_max_delay'), 10) : 180,
+
             signatureEmail: localStorage.getItem('gsafe_sig_email') || 'deepak@mobi-hub.com',
             signaturePhone: localStorage.getItem('gsafe_sig_phone') || '+44 7477 740831',
             signatureWebsite: localStorage.getItem('gsafe_sig_website') || 'https://www.mobi-hub.co.uk/',
@@ -1181,6 +1184,8 @@
                     localStorage.setItem('gsafe_client_id', state.clientId);
                 });
             }
+            
+            // Attach input event listeners with fallback to 10 and 30 for safety
             if(minDelayEl) {
                 minDelayEl.addEventListener('input', (e) => {
                     state.minDelay = parseInt(e.target.value, 10) || 10;
@@ -1193,6 +1198,7 @@
                     localStorage.setItem('gsafe_max_delay', state.maxDelay);
                 });
             }
+            
             if(emailSubjectEl) {
                 emailSubjectEl.addEventListener('input', (e) => {
                     state.subject = e.target.value;
@@ -2459,9 +2465,14 @@
                 renderSentLog();
                 renderCampaigns(); 
                 
-                // Calculate Dynamic Delay
-                const minDelayMs = (state.minDelay || 10) * 1000;
-                const maxDelayMs = (state.maxDelay || 30) * 1000;
+                // Calculate Dynamic Delay safely
+                const min = parseInt(state.minDelay, 10) || 10;
+                const max = parseInt(state.maxDelay, 10) || 30;
+                const actualMin = Math.max(5, Math.min(min, max)); // absolute floor of 5s
+                const actualMax = Math.max(5, Math.max(min, max));
+                
+                const minDelayMs = actualMin * 1000;
+                const maxDelayMs = actualMax * 1000;
                 const delay = minDelayMs + (Math.random() * (maxDelayMs - minDelayMs));
                 
                 state.nextSendTime = Date.now() + delay;
