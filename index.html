@@ -859,7 +859,7 @@
             unsubscribeMsg: localStorage.getItem('gsafe_unsub_msg') || "If this email isn't relevant, please reply 'unsubscribe' to let me know.",
 
             subject: localStorage.getItem('gsafe_subject') || '',
-            body: localStorage.getItem('gsafe_body') || 'Hello {Name},<br><br>I noticed that {Company} is doing great work...<br><br>Best,<br>[Your Name]',
+            body: localStorage.getItem('gsafe_body') || '',
             queue: JSON.parse(localStorage.getItem('gsafe_queue') || '[]'),
             sentLog: JSON.parse(localStorage.getItem('gsafe_sent_log') || '[]'),
             campaigns: JSON.parse(localStorage.getItem('gsafe_campaigns') || '[]'),
@@ -872,6 +872,11 @@
         
         function getSignatureHtml() {
             return `<br><br>---<br>📧 ${state.signatureEmail}<br>📞 ${state.signaturePhone}<br>🌍 ${state.signatureWebsite}`;
+        }
+
+        // Default body backup just in case
+        if (!state.body) {
+            state.body = 'Hello {Name},<br><br>I noticed that {Company} is doing great work...<br><br>Best,<br>[Your Name]' + getSignatureHtml();
         }
 
         // --- DEFAULT TEMPLATES ---
@@ -1174,6 +1179,18 @@
                 clientIdEl.addEventListener('input', (e) => {
                     state.clientId = e.target.value;
                     localStorage.setItem('gsafe_client_id', state.clientId);
+                });
+            }
+            if(minDelayEl) {
+                minDelayEl.addEventListener('input', (e) => {
+                    state.minDelay = parseInt(e.target.value, 10) || 10;
+                    localStorage.setItem('gsafe_min_delay', state.minDelay);
+                });
+            }
+            if(maxDelayEl) {
+                maxDelayEl.addEventListener('input', (e) => {
+                    state.maxDelay = parseInt(e.target.value, 10) || 30;
+                    localStorage.setItem('gsafe_max_delay', state.maxDelay);
                 });
             }
             if(emailSubjectEl) {
