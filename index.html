@@ -803,8 +803,6 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        let isProcessing = false;
-
         // --- HELPER ---
         const generateId = () => 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
@@ -867,8 +865,7 @@
             body: localStorage.getItem('gsafe_body') || '',
             queue: JSON.parse(localStorage.getItem('gsafe_queue') || '[]'),
             sentLog: JSON.parse(localStorage.getItem('gsafe_sent_log') || '[]'),
-            campaigns: JSON.parse(localStorage.getItem('gsafe_campaigns') || '[]'),
-            nextSendTime: 0
+            campaigns: JSON.parse(localStorage.getItem('gsafe_campaigns') || '[]')
         };
 
         let currentContactId = null;
@@ -1158,38 +1155,26 @@
                  if(co) co.textContent = origin;
             }
 
-            // CLEAN UP ANY EXISTING INTERVALS AND WORKERS TO PREVENT DOUBLE-FIRING
-            if (window.gsafeWorker) {
-                window.gsafeWorker.terminate();
-            }
+            // CLEANUP GHOST WORKERS ON HOT-RELOAD
             if (window.appWorker) {
                 window.appWorker.terminate();
+                window.appWorker = null;
+            }
+            if (window.gsafeWorker) {
+                window.gsafeWorker.terminate();
+                window.gsafeWorker = null;
             }
             if (window.gsafeTimer) {
                 clearInterval(window.gsafeTimer);
             }
 
-            // Build a single robust Web Worker for background timing
-            const workerBlob = new Blob([`
-                let timer = null;
-                self.onmessage = function(e) {
-                    if (e.data === 'start') {
-                        if (timer) clearInterval(timer);
-                        timer = setInterval(() => self.postMessage('tick'), 1000);
-                    } else if (e.data === 'stop') {
-                        if (timer) clearInterval(timer);
-                        timer = null;
-                    }
-                };
-            `], { type: 'application/javascript' });
-            
-            window.gsafeWorker = new Worker(URL.createObjectURL(workerBlob));
-            window.gsafeWorker.onmessage = function(e) {
-                if (e.data === 'tick') {
-                    processQueue();
-                }
-            };
-            window.gsafeWorker.postMessage('start');
+            // SINGLE SECURE INTERVAL LOOP
+            window.gsafeTimer = setInterval(processQueue, 1000);
+
+            // STOP ON UNLOAD TO PREVENT LEAKING
+            window.addEventListener('beforeunload', () => {
+                if (window.gsafeTimer) clearInterval(window.gsafeTimer);
+            });
 
             switchView('dashboard'); 
             
@@ -2333,9 +2318,10 @@
                     state.runningCampaignId = sel ? sel.value : 'all';
                 }
                 
-                // CRITICAL FIX: If we press start, allow it to send immediately if delay has passed
-                if(Date.now() > state.nextSendTime) {
-                    state.nextSendTime = Date.now();
+                // Allow immediate sending if the last cooldown has already expired
+                const nextSend = parseInt(localStorage.getItem('gsafe_next_send_time') || '0', 10);
+                if(Date.now() > nextSend) {
+                    localStorage.setItem('gsafe_next_send_time', Date.now().toString());
                 }
             }
 
@@ -2370,16 +2356,20 @@
         }
 
         async function processQueue() {
-            if (!state.isSending || isProcessing || !state.token) return;
+            const isProc = localStorage.getItem('gsafe_is_processing');
+            if (!state.isSending || isProc === 'true' || !state.token) return;
 
-            // Cooldown check
-            if (Date.now() < state.nextSendTime) {
-                const remaining = Math.ceil((state.nextSendTime - Date.now()) / 1000);
+            // Strict Cooldown Check via localStorage sync
+            const nextSendTime = parseInt(localStorage.getItem('gsafe_next_send_time') || '0', 10);
+            if (Date.now() < nextSendTime) {
+                const remaining = Math.ceil((nextSendTime - Date.now()) / 1000);
                 updateStatus(`Cooling down... ${remaining}s`);
                 return;
             }
 
-            const pending = state.queue.find(item => item.status === 'pending' && (state.runningCampaignId === 'all' || item.campaignId === state.runningCampaignId));
+            // Sync the queue to catch any tab changes
+            const currentQueue = JSON.parse(localStorage.getItem('gsafe_queue') || '[]');
+            const pending = currentQueue.find(item => item.status === 'pending' && (state.runningCampaignId === 'all' || item.campaignId === state.runningCampaignId));
             
             // Queue check
             if (!pending) {
@@ -2396,8 +2386,8 @@
                 return;
             }
 
-            // Send
-            isProcessing = true;
+            // Send Lock
+            localStorage.setItem('gsafe_is_processing', 'true');
             updateStatus(`Sending to ${pending.email}...`);
 
             try {
@@ -2467,24 +2457,36 @@
                     campaignId: pending.campaignId || null
                 };
 
-                state.sentLog.unshift(newLog);
-                localStorage.setItem('gsafe_sent_log', JSON.stringify(state.sentLog));
+                // Sync Logs
+                const updatedLogs = JSON.parse(localStorage.getItem('gsafe_sent_log') || '[]');
+                updatedLogs.unshift(newLog);
+                localStorage.setItem('gsafe_sent_log', JSON.stringify(updatedLogs));
+                state.sentLog = updatedLogs;
                 
-                state.queue = state.queue.filter(q => q.id !== pending.id);
-                saveQueue();
+                // Sync Queue
+                const updatedQueue = JSON.parse(localStorage.getItem('gsafe_queue') || '[]').filter(q => q.id !== pending.id);
+                localStorage.setItem('gsafe_queue', JSON.stringify(updatedQueue));
+                state.queue = updatedQueue;
                 
                 updateStatus(`Sent to ${pending.email}`);
                 showToast(`Sent to ${pending.email}`, 'success');
 
             } catch (error) {
                 console.error(error);
-                pending.status = 'failed';
-                pending.error = error.message;
-                saveQueue();
+                
+                const currentQueue = JSON.parse(localStorage.getItem('gsafe_queue') || '[]');
+                const failedItem = currentQueue.find(item => item.id === pending.id);
+                if (failedItem) {
+                    failedItem.status = 'failed';
+                    failedItem.error = error.message;
+                    localStorage.setItem('gsafe_queue', JSON.stringify(currentQueue));
+                    state.queue = currentQueue;
+                }
+
                 updateStatus(`Error: ${error.message}`);
                 toggleSending(false); 
             } finally {
-                isProcessing = false;
+                localStorage.setItem('gsafe_is_processing', 'false'); // Unlock
                 renderQueue();
                 renderSentLog();
                 renderCampaigns(); 
@@ -2499,7 +2501,7 @@
                 const maxDelayMs = actualMax * 1000;
                 const delay = minDelayMs + (Math.random() * (maxDelayMs - minDelayMs));
                 
-                state.nextSendTime = Date.now() + delay;
+                localStorage.setItem('gsafe_next_send_time', (Date.now() + delay).toString());
                 
                 // Manually refresh dashboard count without overwriting status
                 const count = getSentTodayCount();
