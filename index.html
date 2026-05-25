@@ -804,10 +804,8 @@
     <!-- JAVASCRIPT LOGIC -->
     <script>
         // --- GLOBAL VARIABLES (Replaces closures to fix stampede bugs on hot reload) ---
-        window.isProcessingEmail = window.isProcessingEmail || false;
-        window.nextSendTime = window.nextSendTime || 0;
-        window.gsafeTimer = window.gsafeTimer || null;
-
+        let isProcessing = false;
+        
         // --- HELPER ---
         const generateId = () => 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
@@ -842,6 +840,10 @@
             }, 4000);
         }
 
+        // --- CONFIGURATION ---
+        const EMBEDDED_CLIENT_ID = "195749587118-dg3i2gogrq13bns5i2llivlafr21ncav.apps.googleusercontent.com";
+        const SIGNATURE = `\n\n---\n📧 deepak@mobi-hub.com\n📞 +44 7477 740831\n🌍 https://www.mobi-hub.co.uk/`;
+
         // --- STATE MANAGEMENT ---
         const state = {
             token: null,
@@ -866,7 +868,8 @@
             body: localStorage.getItem('gsafe_body') || '',
             queue: JSON.parse(localStorage.getItem('gsafe_queue') || '[]'),
             sentLog: JSON.parse(localStorage.getItem('gsafe_sent_log') || '[]'),
-            campaigns: JSON.parse(localStorage.getItem('gsafe_campaigns') || '[]')
+            campaigns: JSON.parse(localStorage.getItem('gsafe_campaigns') || '[]'),
+            nextSendTime: 0
         };
 
         let currentContactId = null;
@@ -2341,30 +2344,34 @@
         }
 
         async function processQueue() {
-            if (!state.isSending || window.isProcessingEmail || !state.token) return;
+            if (!state.isSending || isProcessing || !state.token) return;
 
+            // Cooldown check
             if (Date.now() < window.nextSendTime) {
                 const remaining = Math.ceil((window.nextSendTime - Date.now()) / 1000);
-                updateStatus(`Waiting ${remaining}s...`);
+                updateStatus(`Cooling down... ${remaining}s`);
                 return;
             }
 
             const pending = state.queue.find(item => item.status === 'pending' && (state.runningCampaignId === 'all' || item.campaignId === state.runningCampaignId));
             
+            // Queue check
             if (!pending) {
                 toggleSending(false);
-                updateStatus(state.runningCampaignId === 'all' ? "All queues finished." : "Campaign finished.");
+                updateStatus("Queue finished.");
                 showToast("Campaign sending completed.", "success");
                 return;
             }
 
+            // Daily Limit Check
             if (getSentTodayCount() >= state.dailyQuota) {
                 toggleSending(false);
                 updateStatus(`Daily limit (${state.dailyQuota}) reached.`);
                 return;
             }
 
-            window.isProcessingEmail = true;
+            // Send
+            isProcessing = true;
             updateStatus(`Sending to ${pending.email}...`);
 
             try {
@@ -2382,16 +2389,18 @@
                      rawBody = pending.body;
                 }
 
+                // Prepare content with Spintax processing
                 let processedSubject = processSpintax(rawSubject);
                 let processedBody = processSpintax(rawBody);
 
+                // Variable replacement (Robust)
                 processedBody = processedBody
-                    .replace(/{{first_name}}/gi, pending.first_name || '') 
-                    .replace(/{first_name}/gi, pending.first_name || '')   
-                    .replace(/{name}/gi, pending.first_name || '')         
-                    .replace(/{{name}}/gi, pending.first_name || '')       
-                    .replace(/{{company}}/gi, pending.company || '')       
-                    .replace(/{company}/gi, pending.company || '');        
+                    .replace(/{{first_name}}/gi, pending.first_name || '') // Case insensitive
+                    .replace(/{first_name}/gi, pending.first_name || '')   // Single braces
+                    .replace(/{name}/gi, pending.first_name || '')         // Common alias
+                    .replace(/{{name}}/gi, pending.first_name || '')       // Common alias
+                    .replace(/{{company}}/gi, pending.company || '')       // Case insensitive
+                    .replace(/{company}/gi, pending.company || '');        // Single braces
                 
                 if (state.signatureEmail && !processedBody.includes(state.signatureEmail)) {
                     processedBody += getSignatureHtml();
@@ -2440,6 +2449,18 @@
                 
                 updateStatus(`Sent to ${pending.email}`);
                 showToast(`Sent to ${pending.email}`, 'success');
+                
+                // Calculate Dynamic Delay safely
+                const min = parseInt(state.minDelay, 10) || 120;
+                const max = parseInt(state.maxDelay, 10) || 180;
+                const actualMin = Math.max(5, Math.min(min, max));
+                const actualMax = Math.max(5, Math.max(min, max));
+                
+                const minDelayMs = actualMin * 1000;
+                const maxDelayMs = actualMax * 1000;
+                const delay = minDelayMs + (Math.random() * (maxDelayMs - minDelayMs));
+                
+                window.nextSendTime = Date.now() + delay;
 
             } catch (error) {
                 console.error(error);
@@ -2449,22 +2470,10 @@
                 updateStatus(`Error: ${error.message}`);
                 toggleSending(false); 
             } finally {
-                window.isProcessingEmail = false;
+                isProcessing = false;
                 renderQueue();
                 renderSentLog();
                 renderCampaigns(); 
-                
-                // Calculate Dynamic Delay safely
-                const min = parseInt(state.minDelay, 10) || 120; // Defaulting safely if empty
-                const max = parseInt(state.maxDelay, 10) || 180;
-                const actualMin = Math.max(5, Math.min(min, max)); // absolute floor of 5s
-                const actualMax = Math.max(5, Math.max(min, max));
-                
-                const minDelayMs = actualMin * 1000;
-                const maxDelayMs = actualMax * 1000;
-                const delay = minDelayMs + (Math.random() * (maxDelayMs - minDelayMs));
-                
-                window.nextSendTime = Date.now() + delay;
                 
                 // Manually refresh dashboard count without overwriting status
                 const count = getSentTodayCount();
