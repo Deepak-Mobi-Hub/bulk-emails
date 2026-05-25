@@ -803,6 +803,11 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
+        // --- GLOBAL VARIABLES (Replaces closures to fix stampede bugs on hot reload) ---
+        window.isProcessingEmail = window.isProcessingEmail || false;
+        window.nextSendTime = window.nextSendTime || 0;
+        window.gsafeTimer = window.gsafeTimer || null;
+
         // --- HELPER ---
         const generateId = () => 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
@@ -861,13 +866,10 @@
             body: localStorage.getItem('gsafe_body') || '',
             queue: JSON.parse(localStorage.getItem('gsafe_queue') || '[]'),
             sentLog: JSON.parse(localStorage.getItem('gsafe_sent_log') || '[]'),
-            campaigns: JSON.parse(localStorage.getItem('gsafe_campaigns') || '[]'),
-            nextSendTime: 0
+            campaigns: JSON.parse(localStorage.getItem('gsafe_campaigns') || '[]')
         };
 
         let currentContactId = null;
-        let queueLoopInterval = null;
-        let isProcessing = false;
 
         const getRawSignature = () => `\n\n---\n📧 ${state.signatureEmail}\n📞 ${state.signaturePhone}\n🌍 ${state.signatureWebsite}`;
         
@@ -1154,11 +1156,11 @@
                  if(co) co.textContent = origin;
             }
 
-            // CLEAN UP WORKERS AND USE INTERVAL
-            if (queueLoopInterval) {
-                clearInterval(queueLoopInterval);
+            // CLEAN UP ANY EXISTING INTERVALS TO PREVENT DOUBLE-FIRING
+            if (window.gsafeTimer) {
+                clearInterval(window.gsafeTimer);
             }
-            queueLoopInterval = setInterval(processQueue, 1000);
+            window.gsafeTimer = setInterval(processQueue, 1000);
 
             switchView('dashboard'); 
             
@@ -2303,8 +2305,8 @@
                 }
                 
                 // CRITICAL FIX: If we press start, allow it to send immediately if delay has passed
-                if(Date.now() > state.nextSendTime) {
-                    state.nextSendTime = Date.now();
+                if(Date.now() > window.nextSendTime) {
+                    window.nextSendTime = Date.now();
                 }
             }
 
@@ -2339,10 +2341,10 @@
         }
 
         async function processQueue() {
-            if (!state.isSending || isProcessing || !state.token) return;
+            if (!state.isSending || window.isProcessingEmail || !state.token) return;
 
-            if (Date.now() < state.nextSendTime) {
-                const remaining = Math.ceil((state.nextSendTime - Date.now()) / 1000);
+            if (Date.now() < window.nextSendTime) {
+                const remaining = Math.ceil((window.nextSendTime - Date.now()) / 1000);
                 updateStatus(`Waiting ${remaining}s...`);
                 return;
             }
@@ -2362,7 +2364,7 @@
                 return;
             }
 
-            isProcessing = true;
+            window.isProcessingEmail = true;
             updateStatus(`Sending to ${pending.email}...`);
 
             try {
@@ -2447,7 +2449,7 @@
                 updateStatus(`Error: ${error.message}`);
                 toggleSending(false); 
             } finally {
-                isProcessing = false;
+                window.isProcessingEmail = false;
                 renderQueue();
                 renderSentLog();
                 renderCampaigns(); 
@@ -2462,7 +2464,7 @@
                 const maxDelayMs = actualMax * 1000;
                 const delay = minDelayMs + (Math.random() * (maxDelayMs - minDelayMs));
                 
-                state.nextSendTime = Date.now() + delay;
+                window.nextSendTime = Date.now() + delay;
                 
                 // Manually refresh dashboard count without overwriting status
                 const count = getSentTodayCount();
