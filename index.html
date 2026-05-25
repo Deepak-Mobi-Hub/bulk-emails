@@ -803,9 +803,8 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- GLOBAL VARIABLES (Replaces closures to fix stampede bugs on hot reload) ---
-        window.gsafeIsProcessing = window.gsafeIsProcessing || false;
-        
+        let isProcessing = false;
+
         // --- HELPER ---
         const generateId = () => 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
@@ -2371,7 +2370,7 @@
         }
 
         async function processQueue() {
-            if (!state.isSending || window.gsafeIsProcessing || !state.token) return;
+            if (!state.isSending || isProcessing || !state.token) return;
 
             // Cooldown check
             if (Date.now() < state.nextSendTime) {
@@ -2398,7 +2397,7 @@
             }
 
             // Send
-            window.gsafeIsProcessing = true;
+            isProcessing = true;
             updateStatus(`Sending to ${pending.email}...`);
 
             try {
@@ -2485,7 +2484,7 @@
                 updateStatus(`Error: ${error.message}`);
                 toggleSending(false); 
             } finally {
-                window.gsafeIsProcessing = false;
+                isProcessing = false;
                 renderQueue();
                 renderSentLog();
                 renderCampaigns(); 
