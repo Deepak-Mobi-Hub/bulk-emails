@@ -804,7 +804,7 @@
     <!-- JAVASCRIPT LOGIC -->
     <script>
         // --- GLOBAL VARIABLES (Replaces closures to fix stampede bugs on hot reload) ---
-        let isProcessing = false;
+        window.gsafeIsProcessing = window.gsafeIsProcessing || false;
         
         // --- HELPER ---
         const generateId = () => 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -1159,11 +1159,18 @@
                  if(co) co.textContent = origin;
             }
 
-            // --- RELIABLE BACKGROUND TIMER (Web Worker) ---
-            // Browsers throttle setInterval in inactive tabs. A Web Worker bypasses this.
+            // CLEAN UP ANY EXISTING INTERVALS AND WORKERS TO PREVENT DOUBLE-FIRING
             if (window.gsafeWorker) {
-                window.gsafeWorker.terminate(); // Kill old worker on hot-reload
+                window.gsafeWorker.terminate();
             }
+            if (window.appWorker) {
+                window.appWorker.terminate();
+            }
+            if (window.gsafeTimer) {
+                clearInterval(window.gsafeTimer);
+            }
+
+            // Build a single robust Web Worker for background timing
             const workerBlob = new Blob([`
                 let timer = null;
                 self.onmessage = function(e) {
@@ -1171,7 +1178,7 @@
                         if (timer) clearInterval(timer);
                         timer = setInterval(() => self.postMessage('tick'), 1000);
                     } else if (e.data === 'stop') {
-                        clearInterval(timer);
+                        if (timer) clearInterval(timer);
                         timer = null;
                     }
                 };
@@ -2328,8 +2335,8 @@
                 }
                 
                 // CRITICAL FIX: If we press start, allow it to send immediately if delay has passed
-                if(Date.now() > window.nextSendTime) {
-                    window.nextSendTime = Date.now();
+                if(Date.now() > state.nextSendTime) {
+                    state.nextSendTime = Date.now();
                 }
             }
 
@@ -2364,12 +2371,12 @@
         }
 
         async function processQueue() {
-            if (!state.isSending || isProcessing || !state.token) return;
+            if (!state.isSending || window.gsafeIsProcessing || !state.token) return;
 
             // Cooldown check
-            if (Date.now() < window.nextSendTime) {
-                const remaining = Math.ceil((window.nextSendTime - Date.now()) / 1000);
-                updateStatus(`Waiting ${remaining}s...`);
+            if (Date.now() < state.nextSendTime) {
+                const remaining = Math.ceil((state.nextSendTime - Date.now()) / 1000);
+                updateStatus(`Cooling down... ${remaining}s`);
                 return;
             }
 
@@ -2391,7 +2398,7 @@
             }
 
             // Send
-            isProcessing = true;
+            window.gsafeIsProcessing = true;
             updateStatus(`Sending to ${pending.email}...`);
 
             try {
@@ -2478,7 +2485,7 @@
                 updateStatus(`Error: ${error.message}`);
                 toggleSending(false); 
             } finally {
-                isProcessing = false;
+                window.gsafeIsProcessing = false;
                 renderQueue();
                 renderSentLog();
                 renderCampaigns(); 
@@ -2493,7 +2500,7 @@
                 const maxDelayMs = actualMax * 1000;
                 const delay = minDelayMs + (Math.random() * (maxDelayMs - minDelayMs));
                 
-                window.nextSendTime = Date.now() + delay;
+                state.nextSendTime = Date.now() + delay;
                 
                 // Manually refresh dashboard count without overwriting status
                 const count = getSentTodayCount();
