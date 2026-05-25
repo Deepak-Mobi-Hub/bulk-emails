@@ -1159,11 +1159,31 @@
                  if(co) co.textContent = origin;
             }
 
-            // CLEAN UP ANY EXISTING INTERVALS TO PREVENT DOUBLE-FIRING
-            if (window.gsafeTimer) {
-                clearInterval(window.gsafeTimer);
+            // --- RELIABLE BACKGROUND TIMER (Web Worker) ---
+            // Browsers throttle setInterval in inactive tabs. A Web Worker bypasses this.
+            if (window.gsafeWorker) {
+                window.gsafeWorker.terminate(); // Kill old worker on hot-reload
             }
-            window.gsafeTimer = setInterval(processQueue, 1000);
+            const workerBlob = new Blob([`
+                let timer = null;
+                self.onmessage = function(e) {
+                    if (e.data === 'start') {
+                        if (timer) clearInterval(timer);
+                        timer = setInterval(() => self.postMessage('tick'), 1000);
+                    } else if (e.data === 'stop') {
+                        clearInterval(timer);
+                        timer = null;
+                    }
+                };
+            `], { type: 'application/javascript' });
+            
+            window.gsafeWorker = new Worker(URL.createObjectURL(workerBlob));
+            window.gsafeWorker.onmessage = function(e) {
+                if (e.data === 'tick') {
+                    processQueue();
+                }
+            };
+            window.gsafeWorker.postMessage('start');
 
             switchView('dashboard'); 
             
@@ -2349,7 +2369,7 @@
             // Cooldown check
             if (Date.now() < window.nextSendTime) {
                 const remaining = Math.ceil((window.nextSendTime - Date.now()) / 1000);
-                updateStatus(`Cooling down... ${remaining}s`);
+                updateStatus(`Waiting ${remaining}s...`);
                 return;
             }
 
@@ -2358,7 +2378,7 @@
             // Queue check
             if (!pending) {
                 toggleSending(false);
-                updateStatus("Queue finished.");
+                updateStatus(state.runningCampaignId === 'all' ? "All queues finished." : "Campaign finished.");
                 showToast("Campaign sending completed.", "success");
                 return;
             }
@@ -2449,18 +2469,6 @@
                 
                 updateStatus(`Sent to ${pending.email}`);
                 showToast(`Sent to ${pending.email}`, 'success');
-                
-                // Calculate Dynamic Delay safely
-                const min = parseInt(state.minDelay, 10) || 120;
-                const max = parseInt(state.maxDelay, 10) || 180;
-                const actualMin = Math.max(5, Math.min(min, max));
-                const actualMax = Math.max(5, Math.max(min, max));
-                
-                const minDelayMs = actualMin * 1000;
-                const maxDelayMs = actualMax * 1000;
-                const delay = minDelayMs + (Math.random() * (maxDelayMs - minDelayMs));
-                
-                window.nextSendTime = Date.now() + delay;
 
             } catch (error) {
                 console.error(error);
@@ -2474,6 +2482,18 @@
                 renderQueue();
                 renderSentLog();
                 renderCampaigns(); 
+                
+                // Calculate Dynamic Delay safely
+                const min = parseInt(state.minDelay, 10) || 120; // Defaulting safely if empty
+                const max = parseInt(state.maxDelay, 10) || 180;
+                const actualMin = Math.max(5, Math.min(min, max)); // absolute floor of 5s
+                const actualMax = Math.max(5, Math.max(min, max));
+                
+                const minDelayMs = actualMin * 1000;
+                const maxDelayMs = actualMax * 1000;
+                const delay = minDelayMs + (Math.random() * (maxDelayMs - minDelayMs));
+                
+                window.nextSendTime = Date.now() + delay;
                 
                 // Manually refresh dashboard count without overwriting status
                 const count = getSentTodayCount();
